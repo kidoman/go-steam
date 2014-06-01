@@ -3,6 +3,8 @@ package steam
 import (
 	"errors"
 	"net"
+
+	"github.com/golang/glog"
 )
 
 type socket struct {
@@ -29,6 +31,8 @@ func (s *socket) close() {
 }
 
 func (s *socket) send(payload []byte) error {
+	glog.V(1).Infof("steam: sending %v bytes payload to %v", len(payload), s.raddr)
+	glog.V(2).Infof("steam: sending payload to %v: %X", s.raddr, payload)
 	n, err := s.conn.WriteToUDP(payload, s.raddr)
 	if err != nil {
 		return err
@@ -46,6 +50,8 @@ func (s *socket) receivePacket() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	glog.V(1).Infof("steam: received %v bytes from %v", n, s.raddr)
+	glog.V(2).Infof("steam: received payload %v: %X", s.raddr, buf[:n])
 
 	return buf[:n], nil
 }

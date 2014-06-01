@@ -2,6 +2,7 @@ package steam
 
 import (
 	"bytes"
+	"math"
 	"strconv"
 )
 
@@ -44,19 +45,31 @@ func readShort(buf *bytes.Buffer) int16 {
 	if n != 2 {
 		triggerError(errNotEnoughDataInResponse)
 	}
-	return int16(t[0] + t[1]<<8)
+	return int16(uint16(t[0]) + uint16(t[1]<<8))
 }
 
-func readInt(buf *bytes.Buffer) int {
+func readLong(buf *bytes.Buffer) int32 {
 	var t [4]byte
 	n, err := buf.Read(t[:])
 	if err != nil {
 		triggerError(errCouldNotReadData)
 	}
-	if n != 2 {
+	if n != 4 {
 		triggerError(errNotEnoughDataInResponse)
 	}
-	return int(t[0] + t[1]<<8 + t[2]<<16 + t[3]<<24)
+	return int32(uint32(t[0]) + uint32(t[1])<<8 + uint32(t[2])<<16 + uint32(t[3])<<24)
+}
+
+func readULong(buf *bytes.Buffer) uint32 {
+	var t [4]byte
+	n, err := buf.Read(t[:])
+	if err != nil {
+		triggerError(errCouldNotReadData)
+	}
+	if n != 4 {
+		triggerError(errNotEnoughDataInResponse)
+	}
+	return uint32(uint32(t[0]) + uint32(t[1])<<8 + uint32(t[2])<<16 + uint32(t[3])<<24)
 }
 
 func toInt(v interface{}) int {
@@ -91,7 +104,7 @@ func readLongLong(buf *bytes.Buffer) int64 {
 	if n != 8 {
 		triggerError(errNotEnoughDataInResponse)
 	}
-	return int64(t[0] + t[1]<<8 + t[2]<<16 + t[3]<<24 + t[4]<<32 + t[5]<<40 + t[6]<<48 + t[7]<<56)
+	return int64(uint64(t[0]) + uint64(t[1])<<8 + uint64(t[2])<<16 + uint64(t[3])<<24 + uint64(t[4])<<32 + uint64(t[5])<<40 + uint64(t[6])<<48 + uint64(t[7])<<56)
 }
 
 func readString(buf *bytes.Buffer) string {
@@ -100,6 +113,11 @@ func readString(buf *bytes.Buffer) string {
 		triggerError(errCouldNotReadData)
 	}
 	return string(bytes[:len(bytes)-1])
+}
+
+func readFloat(buf *bytes.Buffer) float32 {
+	v := readULong(buf)
+	return math.Float32frombits(v)
 }
 
 var requestPrefix = [4]byte{0xFF, 0xFF, 0xFF, 0xFF}
@@ -115,4 +133,9 @@ func writeString(buf *bytes.Buffer, v string) {
 
 func writeByte(buf *bytes.Buffer, v byte) {
 	buf.WriteByte(v)
+}
+
+func writeLong(buf *bytes.Buffer, v int32) {
+	bytes := [4]byte{byte(v & 0xFF), byte(v >> 8 & 0xFF), byte(v >> 16 & 0xFF), byte(v >> 24 & 0xFF)}
+	buf.Write(bytes[:])
 }

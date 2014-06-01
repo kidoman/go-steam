@@ -89,3 +89,52 @@ func (s *Server) Info() (*InfoResponse, error) {
 
 	return res, nil
 }
+
+// PlayersInfo retrieves player information from the server.
+func (s *Server) PlayersInfo() (*PlayersInfoResponse, error) {
+	if err := s.init(); err != nil {
+		return nil, err
+	}
+
+	// Send the challenge request
+	data, err := PlayersInfoRequest{}.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	if err := s.socket.send(data); err != nil {
+		return nil, err
+	}
+	b, err := s.socket.receive()
+	if err != nil {
+		return nil, err
+	}
+
+	if b[0] == HPlayersInfoChallengeResponse {
+		// Parse the challenge response
+		challangeRes := new(PlayersInfoChallengeResponse)
+		if err := challangeRes.UnmarshalBinary(b); err != nil {
+			return nil, err
+		}
+
+		// Send a new request with the proper challenge number
+		data, err = PlayersInfoRequest{challangeRes.Challenge}.MarshalBinary()
+		if err != nil {
+			return nil, err
+		}
+		if err := s.socket.send(data); err != nil {
+			return nil, err
+		}
+		b, err = s.socket.receive()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Parse the return value
+	res := new(PlayersInfoResponse)
+	if err := res.UnmarshalBinary(b); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}

@@ -7,10 +7,12 @@ import (
 	"github.com/golang/glog"
 )
 
-type Header byte
-
 const (
-	HInfo Header = 0x49
+	HInfoRequest                  = 'T'
+	HInfoResponse                 = 'I'
+	HPlayersInfoRequest           = 'U'
+	HPlayersInfoChallengeResponse = 'A'
+	HPlayersInfoResponse          = 'D'
 )
 
 type ServerType int
@@ -152,7 +154,7 @@ func (InfoRequest) MarshalBinary() ([]byte, error) {
 	buf := new(bytes.Buffer)
 
 	writeRequestPrefix(buf)
-	writeByte(buf, 'T')
+	writeByte(buf, HInfoRequest)
 	writeString(buf, "Source Engine Query")
 
 	return buf.Bytes(), nil
@@ -201,6 +203,13 @@ func (r *InfoResponse) UnmarshalBinary(data []byte) (err error) {
 
 	buf := bytes.NewBuffer(data)
 
+	header := readByte(buf)
+	if header != HInfoResponse {
+		triggerError(errBadData)
+	}
+
+	glog.V(1).Info("steam: info response header detected")
+
 	r.Protocol = toInt(readByte(buf))
 	r.Name = readString(buf)
 	r.Map = readString(buf)
@@ -248,4 +257,88 @@ func (r *InfoResponse) UnmarshalBinary(data []byte) (err error) {
 
 func (r *InfoResponse) String() string {
 	return fmt.Sprintf("%v %v %v/%v (%v bots) %v", r.Name, r.Map, r.Players, r.MaxPlayers, r.Bots, r.VAC)
+}
+
+type PlayersInfoRequest struct {
+	Challenge int
+}
+
+func (r PlayersInfoRequest) MarshalBinary() ([]byte, error) {
+	buf := new(bytes.Buffer)
+
+	writeRequestPrefix(buf)
+	writeByte(buf, HPlayersInfoRequest)
+	writeLong(buf, int32(r.Challenge))
+
+	return buf.Bytes(), nil
+}
+
+type PlayersInfoChallengeResponse struct {
+	Challenge int
+}
+
+func (r *PlayersInfoChallengeResponse) UnmarshalBinary(data []byte) (err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			err = e.(parseError)
+		}
+	}()
+
+	buf := bytes.NewBuffer(data)
+
+	header := readByte(buf)
+	if header != HPlayersInfoChallengeResponse {
+		triggerError(errBadData)
+	}
+
+	glog.V(1).Info("steam: players info challenge response header detected")
+
+	r.Challenge = toInt(readLong(buf))
+
+	glog.V(2).Infof("steam: challenge number %#X", r.Challenge)
+
+	return nil
+}
+
+type PlayersInfoResponse struct {
+	Players []*Player
+}
+
+func (r *PlayersInfoResponse) UnmarshalBinary(data []byte) (err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			err = e.(parseError)
+		}
+	}()
+
+	buf := bytes.NewBuffer(data)
+
+	header := readByte(buf)
+	if header != HPlayersInfoResponse {
+		triggerError(errBadData)
+	}
+
+	glog.V(1).Info("steam: players info response header detected")
+
+	count := toInt(readByte(buf))
+	glog.V(2).Infof("steam: received %v player info(s)", count)
+	for i := 0; i < count; i++ {
+		// Read the chunk index
+		readByte(buf)
+
+		p := new(Player)
+		p.Name = readString(buf)
+		p.Score = toInt(readLong(buf))
+		p.Duration = float64(readFloat(buf))
+
+		r.Players = append(r.Players, p)
+	}
+
+	return nil
+}
+
+type Player struct {
+	Name     string
+	Score    int
+	Duration float64
 }
