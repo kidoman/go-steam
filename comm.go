@@ -8,11 +8,11 @@ import (
 )
 
 const (
-	HInfoRequest                  = 'T'
-	HInfoResponse                 = 'I'
-	HPlayersInfoRequest           = 'U'
-	HPlayersInfoChallengeResponse = 'A'
-	HPlayersInfoResponse          = 'D'
+	hInfoRequest                  = 'T'
+	hInfoResponse                 = 'I'
+	hPlayersInfoRequest           = 'U'
+	hPlayersInfoChallengeResponse = 'A'
+	hPlayersInfoResponse          = 'D'
 )
 
 type ServerType int
@@ -147,14 +147,14 @@ var vacStrings = map[VAC]string{
 	VACSecure:    "Secured",
 }
 
-type InfoRequest struct {
+type infoRequest struct {
 }
 
-func (InfoRequest) MarshalBinary() ([]byte, error) {
+func (infoRequest) MarshalBinary() ([]byte, error) {
 	buf := new(bytes.Buffer)
 
 	writeRequestPrefix(buf)
-	writeByte(buf, HInfoRequest)
+	writeByte(buf, hInfoRequest)
 	writeString(buf, "Source Engine Query")
 
 	return buf.Bytes(), nil
@@ -204,7 +204,7 @@ func (r *InfoResponse) UnmarshalBinary(data []byte) (err error) {
 	buf := bytes.NewBuffer(data)
 
 	header := readByte(buf)
-	if header != HInfoResponse {
+	if header != hInfoResponse {
 		triggerError(errBadData)
 	}
 
@@ -259,25 +259,33 @@ func (r *InfoResponse) String() string {
 	return fmt.Sprintf("%v %v %v/%v (%v bots) %v", r.Name, r.Map, r.Players, r.MaxPlayers, r.Bots, r.VAC)
 }
 
-type PlayersInfoRequest struct {
+type playersInfoRequest struct {
 	Challenge int
 }
 
-func (r PlayersInfoRequest) MarshalBinary() ([]byte, error) {
+func (r playersInfoRequest) MarshalBinary() ([]byte, error) {
 	buf := new(bytes.Buffer)
 
 	writeRequestPrefix(buf)
-	writeByte(buf, HPlayersInfoRequest)
+	writeByte(buf, hPlayersInfoRequest)
 	writeLong(buf, int32(r.Challenge))
 
 	return buf.Bytes(), nil
 }
 
-type PlayersInfoChallengeResponse struct {
+func isPlayersInfoChallengeResponse(b []byte) bool {
+	if b[0] == hPlayersInfoChallengeResponse {
+		return true
+	}
+
+	return false
+}
+
+type playersInfoChallengeResponse struct {
 	Challenge int
 }
 
-func (r *PlayersInfoChallengeResponse) UnmarshalBinary(data []byte) (err error) {
+func (r *playersInfoChallengeResponse) UnmarshalBinary(data []byte) (err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			err = e.(parseError)
@@ -287,7 +295,7 @@ func (r *PlayersInfoChallengeResponse) UnmarshalBinary(data []byte) (err error) 
 	buf := bytes.NewBuffer(data)
 
 	header := readByte(buf)
-	if header != HPlayersInfoChallengeResponse {
+	if header != hPlayersInfoChallengeResponse {
 		triggerError(errBadData)
 	}
 
@@ -314,7 +322,7 @@ func (r *PlayersInfoResponse) UnmarshalBinary(data []byte) (err error) {
 	buf := bytes.NewBuffer(data)
 
 	header := readByte(buf)
-	if header != HPlayersInfoResponse {
+	if header != hPlayersInfoResponse {
 		triggerError(errBadData)
 	}
 

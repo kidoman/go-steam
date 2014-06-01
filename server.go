@@ -48,7 +48,7 @@ func (s *Server) Ping() (time.Duration, error) {
 		return 0, err
 	}
 
-	data, err := InfoRequest{}.MarshalBinary()
+	data, err := infoRequest{}.MarshalBinary()
 	if err != nil {
 		return 0, err
 	}
@@ -69,7 +69,7 @@ func (s *Server) Info() (*InfoResponse, error) {
 		return nil, err
 	}
 
-	data, err := InfoRequest{}.MarshalBinary()
+	data, err := infoRequest{}.MarshalBinary()
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func (s *Server) PlayersInfo() (*PlayersInfoResponse, error) {
 	}
 
 	// Send the challenge request
-	data, err := PlayersInfoRequest{}.MarshalBinary()
+	data, err := playersInfoRequest{}.MarshalBinary()
 	if err != nil {
 		return nil, err
 	}
@@ -109,15 +109,15 @@ func (s *Server) PlayersInfo() (*PlayersInfoResponse, error) {
 		return nil, err
 	}
 
-	if b[0] == HPlayersInfoChallengeResponse {
+	if isPlayersInfoChallengeResponse(b) {
 		// Parse the challenge response
-		challangeRes := new(PlayersInfoChallengeResponse)
+		challangeRes := new(playersInfoChallengeResponse)
 		if err := challangeRes.UnmarshalBinary(b); err != nil {
 			return nil, err
 		}
 
 		// Send a new request with the proper challenge number
-		data, err = PlayersInfoRequest{challangeRes.Challenge}.MarshalBinary()
+		data, err = playersInfoRequest{challangeRes.Challenge}.MarshalBinary()
 		if err != nil {
 			return nil, err
 		}
