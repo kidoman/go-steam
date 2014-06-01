@@ -1,6 +1,7 @@
 package steam
 
 import (
+	"github.com/golang/glog"
 	"errors"
 	"time"
 )
@@ -53,6 +54,7 @@ func (s *Server) Ping() (time.Duration, error) {
 		return 0, err
 	}
 
+	glog.V(3).Infof("sending data %v via socket in ping", data)
 	start := time.Now()
 	s.socket.send(data)
 	if _, err := s.socket.receive(); err != nil {
@@ -74,6 +76,7 @@ func (s *Server) Info() (*InfoResponse, error) {
 		return nil, err
 	}
 
+	glog.V(3).Infof("sending data %v via socket in info", data)
 	if err := s.socket.send(data); err != nil {
 		return nil, err
 	}
@@ -81,7 +84,8 @@ func (s *Server) Info() (*InfoResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	glog.V(3).Infof("received data %v via socket", b)
+	
 	res := new(InfoResponse)
 	if err := res.UnmarshalBinary(b); err != nil {
 		return nil, err

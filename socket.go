@@ -1,6 +1,7 @@
 package steam
 
 import (
+	"github.com/golang/glog"
 	"errors"
 	"net"
 )
@@ -29,6 +30,7 @@ func (s *socket) close() {
 }
 
 func (s *socket) send(payload []byte) error {
+	glog.V(3).Infof("writing %v to UDP", payload)
 	n, err := s.conn.WriteToUDP(payload, s.raddr)
 	if err != nil {
 		return err

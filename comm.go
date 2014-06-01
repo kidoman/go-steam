@@ -16,6 +16,7 @@ const (
 type ServerType int
 
 func (st *ServerType) UnmarshalBinary(data []byte) error {
+	glog.V(3).Infof("unmarshalling binary %v for server type ", data)
 	switch data[0] {
 	case 'd':
 		*st = STDedicated
@@ -51,6 +52,7 @@ var serverTypeStrings = map[ServerType]string{
 type Environment int
 
 func (e *Environment) UnmarshalBinary(data []byte) error {
+	glog.V(3).Infof("unmarshalling binary %v for env ", data)
 	switch data[0] {
 	case 'l':
 		*e = ELinux
@@ -86,6 +88,7 @@ var environmentStrings = map[Environment]string{
 type Visibility int
 
 func (v *Visibility) UnmarshalBinary(data []byte) error {
+	glog.V(3).Infof("unmarshalling binary %v for visibility ", data)
 	switch data[0] {
 	case 0:
 		*v = VPublic
@@ -155,6 +158,7 @@ func (InfoRequest) MarshalBinary() ([]byte, error) {
 	writeByte(buf, 'T')
 	writeString(buf, "Source Engine Query")
 
+	glog.V(3).Infof("marshaled binary. buffer: %v", buf)
 	return buf.Bytes(), nil
 }
 
@@ -193,6 +197,7 @@ const (
 )
 
 func (r *InfoResponse) UnmarshalBinary(data []byte) (err error) {
+	glog.V(3).Infof("unmarshalling binary %v", data)
 	defer func() {
 		if e := recover(); e != nil {
 			err = e.(parseError)
