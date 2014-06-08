@@ -107,15 +107,7 @@ func readLong(buf *bytes.Buffer) int32 {
 }
 
 func readFloat(buf *bytes.Buffer) float32 {
-	var t [4]byte
-	n, err := buf.Read(t[:])
-	if err != nil {
-		triggerError(errCouldNotReadData)
-	}
-	if n != 4 {
-		triggerError(errNotEnoughDataInResponse)
-	}
-	return float32(int32(t[0] + t[1]<<8 + t[2]<<16 + t[3]<<24))
+	return float32(readLong(buf))
 }
 
 
