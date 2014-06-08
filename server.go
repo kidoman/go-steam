@@ -93,3 +93,46 @@ func (s *Server) Info() (*InfoResponse, error) {
 
 	return res, nil
 }
+
+func (s *Server) PLayerInfo() (*AS2PlayersResponse, error) {
+	if err := s.init(); err != nil {
+		return nil, err
+	}	
+
+	data := ChallengeRequest{}.MarshalBinary()
+
+	glog.V(3).Infof("sending data %v via socket in info", data)
+	if err := s.socket.send(data); err != nil {
+		return nil, err
+	}
+
+	b, err := s.socket.receive()
+	if err != nil {
+		return nil, err
+	}
+	glog.V(3).Infof("received data %v via socket", b)
+
+	challengeRes := ChallengeResponse{b}
+	as2PlayerReq := AS2PlayerRequest{challengeRes}
+
+	data = as2PlayerReq.MarshalBinary()
+
+	glog.V(3).Infof("sending data %v via socket in info", data)
+	if err := s.socket.send(data); err != nil {
+		return nil, err
+	}
+
+	b, err = s.socket.receive()
+	if err != nil {
+		return nil, err
+	}
+	glog.V(3).Infof("received data %v via socket", b)	
+
+	as2PlayerRes := new(AS2PlayersResponse)
+
+	if err := as2PlayerRes.UnMarshalData(b); err != nil {
+		return nil, err
+	}
+
+	return as2PlayerRes, nil
+}

@@ -21,7 +21,10 @@ func main() {
 		must(err)
 		info, err := server.Info()
 		must(err)
+		playerInfo, err := server.PLayerInfo()
+		must(err)
 		fmt.Printf("%v: %v with ping %v\n", address, info, ping)
+		fmt.Printf("players info: %v\n", playerInfo)
 	}
 }
 

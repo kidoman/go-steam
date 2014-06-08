@@ -94,6 +94,31 @@ func readLongLong(buf *bytes.Buffer) int64 {
 	return int64(t[0] + t[1]<<8 + t[2]<<16 + t[3]<<24 + t[4]<<32 + t[5]<<40 + t[6]<<48 + t[7]<<56)
 }
 
+func readLong(buf *bytes.Buffer) int32 {
+	var t [4]byte
+	n, err := buf.Read(t[:])
+	if err != nil {
+		triggerError(errCouldNotReadData)
+	}
+	if n != 4 {
+		triggerError(errNotEnoughDataInResponse)
+	}
+	return int32(t[0] + t[1]<<8 + t[2]<<16 + t[3]<<24)
+}
+
+func readFloat(buf *bytes.Buffer) float32 {
+	var t [4]byte
+	n, err := buf.Read(t[:])
+	if err != nil {
+		triggerError(errCouldNotReadData)
+	}
+	if n != 4 {
+		triggerError(errNotEnoughDataInResponse)
+	}
+	return float32(int32(t[0] + t[1]<<8 + t[2]<<16 + t[3]<<24))
+}
+
+
 func readString(buf *bytes.Buffer) string {
 	bytes, err := buf.ReadBytes(0)
 	if err != nil {
