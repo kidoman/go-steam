@@ -14,21 +14,17 @@ type Player struct{
 	duration float32
 }
 
-type AS2PlayersResponse struct{
+type A2SPlayersResponse struct{
 	playersCount byte
 	players []Player
 }
 
-func invalidAS2PlayersResponseHeader() error {
-	return errors.New("as2PlayersResponse: ")
-}
-
-func (a *AS2PlayersResponse) UnMarshalData(data []byte) (err error) {
-	glog.V(3).Infof("unmarshalling data for AS2PlayersResponse: %v", data)
+func (a *A2SPlayersResponse) UnMarshalData(data []byte) (err error) {
+	glog.V(3).Infof("unmarshalling data for A2SPlayersResponse: %v", data)
 	buf := bytes.NewBuffer(data)
 
 	if header := readByte(buf); header != 0x44{
-		return errors.New("steam: invalid header in the as2playersresponse")
+		return errors.New("steam: invalid header in the a2splayersresponse")
 	}
 
 	a.playersCount = readByte(buf)
@@ -50,7 +46,7 @@ func (a *AS2PlayersResponse) UnMarshalData(data []byte) (err error) {
 	return nil
 }
 
-func (a *AS2PlayersResponse) String() string{
+func (a *A2SPlayersResponse) String() string{
 	str := fmt.Sprintf("players count: %v\n\n", a.playersCount)	
 
 	for _, player := range a.players {

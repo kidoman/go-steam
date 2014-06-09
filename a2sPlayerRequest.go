@@ -5,17 +5,17 @@ import (
 	"bytes"
 )
 
-type AS2PlayerRequest struct {
+type A2SPlayerRequest struct {
 	challengeRes ChallengeResponse
 }
 
-func (a *AS2PlayerRequest) MarshalBinary() ([]byte) {
+func (a *A2SPlayerRequest) MarshalBinary() ([]byte) {
 	buf := new(bytes.Buffer)
 
 	writeRequestPrefix(buf)
 	writeByte(buf, 'U')
 	buf.Write(a.challengeRes.GetChallangeNumber())
 
-	glog.V(3).Infof("AS2PlayerRequest buffer: %v string: %v", buf.Bytes(), string(buf.Bytes()))
+	glog.V(3).Infof("A2SPlayerRequest buffer: %v string: %v", buf.Bytes(), string(buf.Bytes()))
 	return buf.Bytes()
 }
