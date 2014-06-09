@@ -15,6 +15,6 @@ func (ChallengeRequest) MarshalBinary() ([]byte) {
 	writeByte(buf, 'U')
 	writeRequestPrefix(buf)
 
-	glog.V(3).Infof("Challenge request buffer: %v string: %v", buf.Bytes(), string(buf.Bytes()))
+	glog.V(2).Infof("challengeRequest buffer: %v", buf.Bytes())
 	return buf.Bytes()
 }

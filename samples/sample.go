@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 
 	"github.com/kidoman/go-steam"
@@ -15,6 +16,7 @@ var addresses = []string{
 }
 
 func main() {
+	flag.Parse()
 	for _, address := range addresses {
 		server := &steam.Server{Addr: address}
 		ping, err := server.Ping()

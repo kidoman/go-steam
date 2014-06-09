@@ -6,16 +6,15 @@ import (
 )
 
 type A2SPlayerRequest struct {
-	challengeRes ChallengeResponse
 }
 
-func (a *A2SPlayerRequest) MarshalBinary() ([]byte) {
+func (A2SPlayerRequest) MarshalBinaryFromChallenge(c ChallengeResponse) ([]byte) {
 	buf := new(bytes.Buffer)
 
 	writeRequestPrefix(buf)
 	writeByte(buf, 'U')
-	buf.Write(a.challengeRes.GetChallangeNumber())
+	buf.Write(c.GetChallangeNumber())
 
-	glog.V(3).Infof("A2SPlayerRequest buffer: %v string: %v", buf.Bytes(), string(buf.Bytes()))
+	glog.V(2).Infof("a2SPlayerRequest buffer: %v", buf.Bytes())
 	return buf.Bytes()
 }

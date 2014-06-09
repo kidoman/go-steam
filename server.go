@@ -113,9 +113,7 @@ func (s *Server) PLayerInfo() (*A2SPlayersResponse, error) {
 	glog.V(3).Infof("received data %v via socket", b)
 
 	challengeRes := ChallengeResponse{b}
-	a2sPlayerRequest := A2SPlayerRequest{challengeRes}
-
-	data = a2sPlayerRequest.MarshalBinary()
+	data = A2SPlayerRequest{}.MarshalBinaryFromChallenge(challengeRes)
 
 	glog.V(3).Infof("sending data %v via socket in info", data)
 	if err := s.socket.send(data); err != nil {
@@ -126,11 +124,11 @@ func (s *Server) PLayerInfo() (*A2SPlayersResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	glog.V(3).Infof("received data %v via socket", b)	
+	glog.V(2).Infof("received data %v via socket", b)	
 
 	a2sPlayerRes := new(A2SPlayersResponse)
 
-	if err := a2sPlayerRes.UnMarshalData(b); err != nil {
+	if err := a2sPlayerRes.UnMarshalBinary(b); err != nil {
 		return nil, err
 	}
 

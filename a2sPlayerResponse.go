@@ -19,8 +19,8 @@ type A2SPlayersResponse struct{
 	players []Player
 }
 
-func (a *A2SPlayersResponse) UnMarshalData(data []byte) (err error) {
-	glog.V(3).Infof("unmarshalling data for A2SPlayersResponse: %v", data)
+func (a *A2SPlayersResponse) UnMarshalBinary(data []byte) (err error) {
+	glog.V(2).Infof("unmarshalling binary for A2SPlayersResponse: %v", data)
 	buf := bytes.NewBuffer(data)
 
 	if header := readByte(buf); header != 0x44{
