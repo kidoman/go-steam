@@ -28,19 +28,14 @@ func (a *A2SPlayersResponse) UnMarshalBinary(data []byte) (err error) {
 	}
 
 	a.playersCount = readByte(buf)
-	glog.V(3).Infof("players count: %v", a.playersCount)
 	a.players = make([]Player, a.playersCount)
 
 	for i := 0; i < int(a.playersCount); i++ {
 		p := &a.players[i]
 		p.index = readByte(buf)
-		glog.V(3).Infof("player index: %v", p.index)
 		p.name = readString(buf)
-		glog.V(3).Infof("player name: %v", p.name)
 		p.score = readLong(buf)
-		glog.V(3).Infof("player score: %v", p.score)
 		p.duration = readFloat(buf)
-		glog.V(3).Infof("player duration: %v", p.duration)
 	}
 
 	return nil
