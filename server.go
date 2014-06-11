@@ -55,7 +55,7 @@ func (s *Server) Ping() (time.Duration, error) {
 		return 0, err
 	}
 
-	glog.V(3).Infof("sending data %v via socket in ping", data)
+	glog.V(3).Infof("steam: sending data %v via socket in ping", data)
 	start := time.Now()
 	s.socket.send(data)
 	if _, err := s.socket.receive(); err != nil {

@@ -9,7 +9,7 @@ import (
 type ChallengeResponse []byte
 
 func (c ChallengeResponse) GetChallange() (challenge []byte) {
-	glog.V(2).Infoln(c)
+	glog.V(2).Infof("steam: getting challenge from %v", c)
 
 	return c[(len(c) - 4):]
 }

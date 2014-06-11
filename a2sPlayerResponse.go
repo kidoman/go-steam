@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"os"
 
 	"github.com/golang/glog"
 )
@@ -22,10 +21,10 @@ type A2SPlayersResponse struct {
 }
 
 func (a *A2SPlayersResponse) UnMarshalBinary(data []byte) (err error) {
-	glog.V(2).Infof("unmarshalling binary for A2SPlayersResponse: %v", data)
+	glog.V(2).Infof("steam: unmarshalling binary for A2SPlayersResponse: %v", data)
 	buf := bytes.NewBuffer(data)
 
-	if header := readByte(buf); header != 0x44{
+	if header := readByte(buf); header != 0x44 {
 		return errors.New("steam: invalid header in the a2splayersresponse")
 	}
 
@@ -43,14 +42,14 @@ func (a *A2SPlayersResponse) UnMarshalBinary(data []byte) (err error) {
 	return nil
 }
 
-func (a *A2SPlayersResponse) String() string{
-	str := fmt.Sprintf("players count: %v\n\n", a.playersCount)	
+func (a *A2SPlayersResponse) String() string {
+	str := fmt.Sprintf("players count: %v\n\n", a.playersCount)
 
 	for _, player := range a.players {
-		str += fmt.Sprintf("player index: %v\n", player.index)	
-		str += fmt.Sprintf("player name: %v\n", player.name)	
-		str += fmt.Sprintf("player score: %v\n", player.score)	
-		str += fmt.Sprintf("player duration: %v seconds\n\n", player.duration)	
+		str += fmt.Sprintf("player index: %v\n", player.index)
+		str += fmt.Sprintf("player name: %v\n", player.name)
+		str += fmt.Sprintf("player score: %v\n", player.score)
+		str += fmt.Sprintf("player duration: %v seconds\n\n", player.duration)
 	}
 
 	return str

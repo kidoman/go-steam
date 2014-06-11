@@ -110,7 +110,6 @@ func readFloat(buf *bytes.Buffer) float32 {
 	return float32(readLong(buf))
 }
 
-
 func readString(buf *bytes.Buffer) string {
 	bytes, err := buf.ReadBytes(0)
 	if err != nil {
