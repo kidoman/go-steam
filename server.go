@@ -1,9 +1,10 @@
 package steam
 
 import (
-	"github.com/golang/glog"
 	"errors"
 	"time"
+
+	"github.com/golang/glog"
 )
 
 // Server represents a Source server.
@@ -85,7 +86,7 @@ func (s *Server) Info() (*InfoResponse, error) {
 		return nil, err
 	}
 	glog.V(3).Infof("received data %v via socket", b)
-	
+
 	res := new(InfoResponse)
 	if err := res.UnmarshalBinary(b); err != nil {
 		return nil, err
@@ -94,10 +95,11 @@ func (s *Server) Info() (*InfoResponse, error) {
 	return res, nil
 }
 
+// PlayerInfo retrieves players information on the server.
 func (s *Server) PLayerInfo() (*A2SPlayersResponse, error) {
 	if err := s.init(); err != nil {
 		return nil, err
-	}	
+	}
 
 	data := ChallengeRequest{}.MarshalBinary()
 
@@ -112,7 +114,7 @@ func (s *Server) PLayerInfo() (*A2SPlayersResponse, error) {
 	}
 	glog.V(3).Infof("received data %v via socket", b)
 
-	challengeRes := ChallengeResponse{b}
+	challengeRes := ChallengeResponse(b)
 	data = A2SPlayerRequest{}.MarshalBinaryFromChallenge(challengeRes)
 
 	glog.V(3).Infof("sending data %v via socket in info", data)
@@ -124,7 +126,7 @@ func (s *Server) PLayerInfo() (*A2SPlayersResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	glog.V(2).Infof("received data %v via socket", b)	
+	glog.V(2).Infof("received data %v via socket", b)
 
 	a2sPlayerRes := new(A2SPlayersResponse)
 

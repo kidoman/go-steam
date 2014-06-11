@@ -1,22 +1,24 @@
 package steam
 
 import (
-	"fmt"
-	"github.com/golang/glog"
-	"errors"
 	"bytes"
+	"errors"
+	"fmt"
+	"os"
+
+	"github.com/golang/glog"
 )
 
-type Player struct{
-	index byte
-	name string
-	score int32
+type Player struct {
+	index    byte
+	name     string
+	score    int32
 	duration float32
 }
 
-type A2SPlayersResponse struct{
+type A2SPlayersResponse struct {
 	playersCount byte
-	players []Player
+	players      []Player
 }
 
 func (a *A2SPlayersResponse) UnMarshalBinary(data []byte) (err error) {

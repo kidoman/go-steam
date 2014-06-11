@@ -2,23 +2,22 @@ package steam
 
 import (
 	"fmt"
+
 	"github.com/golang/glog"
 )
 
-type ChallengeResponse struct {
-	data []byte
-}
+type ChallengeResponse []byte
 
-func (c *ChallengeResponse) GetChallangeNumber() (challenge []byte) {
+func (c ChallengeResponse) GetChallange() (challenge []byte) {
 	glog.V(2).Infoln(c)
 
-	return c.data[(len(c.data)-4):]
+	return c[(len(c) - 4):]
 }
 
-func (c *ChallengeResponse) String() string {
+func (c ChallengeResponse) String() string {
 	str := fmt.Sprint("challengeResponse: [")
-	for i := 0; i < len(c.data); i++ {
-		 str += fmt.Sprintf("%x ", c.data[i])
+	for i := 0; i < len(c); i++ {
+		str += fmt.Sprintf("%x ", c[i])
 	}
 	str += fmt.Sprint("]")
 	return str
