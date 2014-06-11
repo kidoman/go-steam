@@ -77,15 +77,10 @@ func (s *Server) Info() (*InfoResponse, error) {
 		return nil, err
 	}
 
-	glog.V(3).Infof("sending data %v via socket in info", data)
-	if err := s.socket.send(data); err != nil {
-		return nil, err
-	}
-	b, err := s.socket.receive()
+	b, err := s.sendAndRecieve(data)
 	if err != nil {
 		return nil, err
 	}
-	glog.V(3).Infof("received data %v via socket", b)
 
 	res := new(InfoResponse)
 	if err := res.UnmarshalBinary(b); err != nil {
@@ -103,30 +98,18 @@ func (s *Server) PLayerInfo() (*A2SPlayersResponse, error) {
 
 	data := ChallengeRequest{}.MarshalBinary()
 
-	glog.V(3).Infof("sending data %v via socket in info", data)
-	if err := s.socket.send(data); err != nil {
-		return nil, err
-	}
-
-	b, err := s.socket.receive()
+	b, err := s.sendAndRecieve(data)
 	if err != nil {
 		return nil, err
 	}
-	glog.V(3).Infof("received data %v via socket", b)
 
 	challengeRes := ChallengeResponse(b)
 	data = A2SPlayerRequest{}.MarshalBinaryFromChallenge(challengeRes)
 
-	glog.V(3).Infof("sending data %v via socket in info", data)
-	if err := s.socket.send(data); err != nil {
-		return nil, err
-	}
-
-	b, err = s.socket.receive()
+	b, err = s.sendAndRecieve(data)
 	if err != nil {
 		return nil, err
 	}
-	glog.V(2).Infof("received data %v via socket", b)
 
 	a2sPlayerRes := new(A2SPlayersResponse)
 
@@ -135,4 +118,18 @@ func (s *Server) PLayerInfo() (*A2SPlayersResponse, error) {
 	}
 
 	return a2sPlayerRes, nil
+}
+
+func (s *Server) sendAndRecieve(data []byte) ([]byte, error) {
+	glog.V(3).Infof("steam: sending data %v via socket in info", data)
+	if err := s.socket.send(data); err != nil {
+		return nil, err
+	}
+
+	b, err := s.socket.receive()
+	if err != nil {
+		return nil, err
+	}
+	glog.V(3).Infof("steam: received data %v via socket", b)
+	return b, nil
 }
