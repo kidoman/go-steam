@@ -43,14 +43,14 @@ func (a *A2SPlayersResponse) UnMarshalBinary(data []byte) (err error) {
 }
 
 func (a *A2SPlayersResponse) String() string {
-	str := fmt.Sprintf("players count: %v\n\n", a.playersCount)
+	buf := new(bytes.Buffer)
 
+	writeString(buf, fmt.Sprintf("players count: %v\n\n", a.playersCount))
 	for _, player := range a.players {
-		str += fmt.Sprintf("player index: %v\n", player.index)
-		str += fmt.Sprintf("player name: %v\n", player.name)
-		str += fmt.Sprintf("player score: %v\n", player.score)
-		str += fmt.Sprintf("player duration: %v seconds\n\n", player.duration)
+		writeString(buf, fmt.Sprintf("player index: %v\n", player.index))
+		writeString(buf, fmt.Sprintf("player name: %v\n", player.name))
+		writeString(buf, fmt.Sprintf("player score: %v\n", player.score))
+		writeString(buf, fmt.Sprintf("player duration: %v seconds\n\n", player.duration))
 	}
-
-	return str
+	return buf.String()
 }

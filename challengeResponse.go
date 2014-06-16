@@ -1,6 +1,7 @@
 package steam
 
 import (
+	"bytes"
 	"fmt"
 
 	"github.com/golang/glog"
@@ -15,10 +16,13 @@ func (c ChallengeResponse) GetChallange() (challenge []byte) {
 }
 
 func (c ChallengeResponse) String() string {
-	str := fmt.Sprint("challengeResponse: [")
+	buf := new(bytes.Buffer)
+
+	writeString(buf, fmt.Sprint("challengeResponse: ["))
 	for i := 0; i < len(c); i++ {
-		str += fmt.Sprintf("%x ", c[i])
+		writeString(buf, fmt.Sprintf("%x ", c[i]))
 	}
-	str += fmt.Sprint("]")
-	return str
+	writeString(buf, fmt.Sprint("]"))
+
+	return buf.String()
 }
