@@ -7,14 +7,15 @@ import (
 )
 
 type A2SPlayerRequest struct {
+	c ChallengeResponse
 }
 
-func (A2SPlayerRequest) MarshalBinaryFromChallenge(c ChallengeResponse) []byte {
+func (a A2SPlayerRequest) MarshalBinary() []byte {
 	buf := new(bytes.Buffer)
 
 	writeRequestPrefix(buf)
 	writeByte(buf, 'U')
-	buf.Write(c.GetChallange())
+	buf.Write(a.c.GetChallange())
 
 	glog.V(2).Infof("steam: a2SPlayerRequest buffer: %v", buf.Bytes())
 	return buf.Bytes()

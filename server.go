@@ -104,7 +104,7 @@ func (s *Server) PLayerInfo() (*A2SPlayersResponse, error) {
 	}
 
 	challengeRes := ChallengeResponse(b)
-	data = A2SPlayerRequest{}.MarshalBinaryFromChallenge(challengeRes)
+	data = A2SPlayerRequest{challengeRes}.MarshalBinary()
 
 	b, err = s.sendAndRecieve(data)
 	if err != nil {
