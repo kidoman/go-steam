@@ -3,6 +3,8 @@ package steam
 import (
 	"errors"
 	"time"
+
+	"github.com/golang/glog"
 )
 
 // Server represents a Source server.
@@ -10,7 +12,9 @@ type Server struct {
 	// IP:Port combination designating a single server.
 	Addr string
 
-	socket *socket
+	udpSocket *udpSocket
+
+	tcpSocket *tcpSocket
 
 	initialized bool
 }
@@ -25,7 +29,11 @@ func (s *Server) init() error {
 	}
 
 	var err error
-	if s.socket, err = newSocket(s.Addr); err != nil {
+	if s.udpSocket, err = newUdpSocket(s.Addr); err != nil {
+		return err
+	}
+
+	if s.tcpSocket, err = newTcpSocket(s.Addr); err != nil {
 		return err
 	}
 
@@ -39,7 +47,8 @@ func (s *Server) Close() {
 		return
 	}
 
-	s.socket.close()
+	s.udpSocket.close()
+	s.tcpSocket.close()
 }
 
 // Ping returns the RTT (round-trip time) to the server.
@@ -54,8 +63,8 @@ func (s *Server) Ping() (time.Duration, error) {
 	}
 
 	start := time.Now()
-	s.socket.send(data)
-	if _, err := s.socket.receive(); err != nil {
+	s.udpSocket.send(data)
+	if _, err := s.udpSocket.receive(); err != nil {
 		return 0, err
 	}
 
@@ -74,10 +83,10 @@ func (s *Server) Info() (*InfoResponse, error) {
 		return nil, err
 	}
 
-	if err := s.socket.send(data); err != nil {
+	if err := s.udpSocket.send(data); err != nil {
 		return nil, err
 	}
-	b, err := s.socket.receive()
+	b, err := s.udpSocket.receive()
 	if err != nil {
 		return nil, err
 	}
@@ -101,10 +110,10 @@ func (s *Server) PlayersInfo() (*PlayersInfoResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := s.socket.send(data); err != nil {
+	if err := s.udpSocket.send(data); err != nil {
 		return nil, err
 	}
-	b, err := s.socket.receive()
+	b, err := s.udpSocket.receive()
 	if err != nil {
 		return nil, err
 	}
@@ -121,10 +130,10 @@ func (s *Server) PlayersInfo() (*PlayersInfoResponse, error) {
 		if err != nil {
 			return nil, err
 		}
-		if err := s.socket.send(data); err != nil {
+		if err := s.udpSocket.send(data); err != nil {
 			return nil, err
 		}
-		b, err = s.socket.receive()
+		b, err = s.udpSocket.receive()
 		if err != nil {
 			return nil, err
 		}
@@ -137,4 +146,57 @@ func (s *Server) PlayersInfo() (*PlayersInfoResponse, error) {
 	}
 
 	return res, nil
+}
+
+func (s *Server) AuthenticateRcon(rconpasswd string) (bool, error) {
+	if err := s.init(); err != nil {
+		return false, err
+	}
+
+	req := newrconRequest(SERVERDATA_AUTH, rconpasswd)
+	glog.V(2).Infof("steam: sending rcon auth request: %v", req)
+	packet := req.constructPacket()
+
+	if err := s.tcpSocket.send(packet); err != nil {
+		return false, err
+	}
+
+	resp, err := s.tcpSocket.receive()
+	if err != nil {
+		return false, err
+	}
+
+	authResponse := newRconResponse(resp)
+	if req.id == authResponse.id {
+		return true, nil
+	}
+	return false, nil
+}
+
+func (s *Server) ExecRconCommand(command string) (result string, err error) {
+	if err := s.init(); err != nil {
+		return "", err
+	}
+
+	req := newrconRequest(SERVERDATA_EXECCOMMAND, command)
+	glog.V(2).Infof("steam: sending rcon exec command request: %v", req)
+	packet := req.constructPacket()
+
+	if err := s.tcpSocket.send(packet); err != nil {
+		return "", err
+	}
+
+	resp, err := s.tcpSocket.receive()
+	if err != nil {
+		return "", err
+	}
+
+	commandResp := newRconResponse(resp)
+
+	if req.id != commandResp.id {
+		err := errors.New("steam: response id does not match request id")
+		return "", err
+	}
+
+	return commandResp.body, nil
 }
