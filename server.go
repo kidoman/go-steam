@@ -3,6 +3,8 @@ package steam
 import (
 	"errors"
 	"time"
+
+	"github.com/golang/glog"
 )
 
 // Server represents a Source server.
@@ -11,6 +13,8 @@ type Server struct {
 	Addr string
 
 	socket *socket
+
+	tcpSocket *tcpSocket
 
 	initialized bool
 }
@@ -29,6 +33,10 @@ func (s *Server) init() error {
 		return err
 	}
 
+	if s.tcpSocket, err = newTcpSocket(s.Addr); err != nil {
+		return err
+	}
+
 	s.initialized = true
 	return nil
 }
@@ -40,6 +48,7 @@ func (s *Server) Close() {
 	}
 
 	s.socket.close()
+	s.tcpSocket.close()
 }
 
 // Ping returns the RTT (round-trip time) to the server.
@@ -137,4 +146,42 @@ func (s *Server) PlayersInfo() (*PlayersInfoResponse, error) {
 	}
 
 	return res, nil
+}
+
+func (s *Server) AuthenticateRcon(rconpasswd string) (bool, error) {
+	if err := s.init(); err != nil {
+		return false, err
+	}
+
+	req := newrconRequest(rconpasswd)
+	glog.V(2).Infof("steam: sending rcon auth request: %v", req)
+	packet := req.constructPacket()
+
+	if err := s.tcpSocket.send(packet); err != nil {
+		return false, err
+	}
+
+	_, err := s.tcpSocket.receive()
+	if err != nil {
+		return false, err
+	}
+
+	resp, err := s.tcpSocket.receive()
+	if err != nil {
+		return false, err
+	}
+
+	authResponse := newRconResponse(resp)
+
+	if req.id == authResponse.id {
+		return true, nil
+	}
+	return false, nil
+}
+
+func (s *Server) ExecRconCommand(command string) (result string, err error) {
+	if err = s.init(); err != nil {
+		return
+	}
+	return
 }
