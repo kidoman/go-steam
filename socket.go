@@ -113,6 +113,7 @@ func (s *tcpSocket) receive() ([]byte, error) {
 		return nil, err
 	}
 	glog.V(1).Infof("steam: received %v bytes from %v", n, s.raddr)
+	glog.V(2).Infof("steam: received payload %v: %X", s.raddr, buf[:n])
 
 	return buf[:n], nil
 }

@@ -173,7 +173,7 @@ func (s *Server) AuthenticateRcon(rconpasswd string) (bool, error) {
 
 	authResponse := newRconResponse(resp)
 
-	if req.id == authResponse.id {
+	if req.id == respPacket.id {
 		return true, nil
 	}
 	return false, nil
