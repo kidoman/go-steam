@@ -12,6 +12,8 @@ type Server struct {
 
 	socket *socket
 
+	tcpSocket *tcpSocket
+
 	initialized bool
 }
 
@@ -29,6 +31,10 @@ func (s *Server) init() error {
 		return err
 	}
 
+	if s.tcpSocket, err = newTcpSocket(s.Addr); err != nil {
+		return err
+	}
+
 	s.initialized = true
 	return nil
 }
@@ -40,6 +46,7 @@ func (s *Server) Close() {
 	}
 
 	s.socket.close()
+	s.tcpSocket.close()
 }
 
 // Ping returns the RTT (round-trip time) to the server.
@@ -137,4 +144,36 @@ func (s *Server) PlayersInfo() (*PlayersInfoResponse, error) {
 	}
 
 	return res, nil
+}
+
+func (s *Server) AuthenticateRcon(rconpasswd string) (bool, error) {
+	if err := s.init(); err != nil {
+		return false, err
+	}
+
+	req := newRconAuthRequest(rconpasswd)
+	packet := req.constructPacket()
+
+	if err := s.tcpSocket.send(packet); err != nil {
+		return false, err
+	}
+
+	resp, err := s.tcpSocket.receive()
+	if err != nil {
+		return false, err
+	}
+
+	respPacket := newResponsePacket(resp)
+
+	if req.id == respPacket.id {
+		return true, nil
+	}
+	return false, nil
+}
+
+func (s *Server) ExecRconCommand(command string) (result string, err error) {
+	if err = s.initialize(); err != nil {
+		return
+	}
+	return
 }
