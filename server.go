@@ -12,7 +12,7 @@ type Server struct {
 	// IP:Port combination designating a single server.
 	Addr string
 
-	socket *socket
+	udpSocket *udpSocket
 
 	tcpSocket *tcpSocket
 
@@ -29,7 +29,7 @@ func (s *Server) init() error {
 	}
 
 	var err error
-	if s.socket, err = newSocket(s.Addr); err != nil {
+	if s.udpSocket, err = newUdpSocket(s.Addr); err != nil {
 		return err
 	}
 
@@ -47,7 +47,7 @@ func (s *Server) Close() {
 		return
 	}
 
-	s.socket.close()
+	s.udpSocket.close()
 	s.tcpSocket.close()
 }
 
@@ -63,8 +63,8 @@ func (s *Server) Ping() (time.Duration, error) {
 	}
 
 	start := time.Now()
-	s.socket.send(data)
-	if _, err := s.socket.receive(); err != nil {
+	s.udpSocket.send(data)
+	if _, err := s.udpSocket.receive(); err != nil {
 		return 0, err
 	}
 
@@ -83,10 +83,10 @@ func (s *Server) Info() (*InfoResponse, error) {
 		return nil, err
 	}
 
-	if err := s.socket.send(data); err != nil {
+	if err := s.udpSocket.send(data); err != nil {
 		return nil, err
 	}
-	b, err := s.socket.receive()
+	b, err := s.udpSocket.receive()
 	if err != nil {
 		return nil, err
 	}
@@ -110,10 +110,10 @@ func (s *Server) PlayersInfo() (*PlayersInfoResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := s.socket.send(data); err != nil {
+	if err := s.udpSocket.send(data); err != nil {
 		return nil, err
 	}
-	b, err := s.socket.receive()
+	b, err := s.udpSocket.receive()
 	if err != nil {
 		return nil, err
 	}
@@ -130,10 +130,10 @@ func (s *Server) PlayersInfo() (*PlayersInfoResponse, error) {
 		if err != nil {
 			return nil, err
 		}
-		if err := s.socket.send(data); err != nil {
+		if err := s.udpSocket.send(data); err != nil {
 			return nil, err
 		}
-		b, err = s.socket.receive()
+		b, err = s.udpSocket.receive()
 		if err != nil {
 			return nil, err
 		}
