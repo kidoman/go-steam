@@ -7,12 +7,12 @@ import (
 	"github.com/golang/glog"
 )
 
-type socket struct {
+type udpSocket struct {
 	conn  *net.UDPConn
 	raddr *net.UDPAddr
 }
 
-func newSocket(addr string) (*socket, error) {
+func newUdpSocket(addr string) (*udpSocket, error) {
 	raddr, err := net.ResolveUDPAddr("udp4", addr)
 	if err != nil {
 		return nil, err
@@ -23,14 +23,14 @@ func newSocket(addr string) (*socket, error) {
 		return nil, err
 	}
 
-	return &socket{conn, raddr}, nil
+	return &udpSocket{conn, raddr}, nil
 }
 
-func (s *socket) close() {
+func (s *udpSocket) close() {
 	s.conn.Close()
 }
 
-func (s *socket) send(payload []byte) error {
+func (s *udpSocket) send(payload []byte) error {
 	glog.V(1).Infof("steam: sending %v bytes payload to %v", len(payload), s.raddr)
 	glog.V(2).Infof("steam: sending payload to %v: %X", s.raddr, payload)
 	n, err := s.conn.WriteToUDP(payload, s.raddr)
@@ -44,7 +44,7 @@ func (s *socket) send(payload []byte) error {
 	return nil
 }
 
-func (s *socket) receivePacket() ([]byte, error) {
+func (s *udpSocket) receivePacket() ([]byte, error) {
 	var buf [1500]byte
 	n, _, err := s.conn.ReadFromUDP(buf[:])
 	if err != nil {
@@ -56,7 +56,7 @@ func (s *socket) receivePacket() ([]byte, error) {
 	return buf[:n], nil
 }
 
-func (s *socket) receive() ([]byte, error) {
+func (s *udpSocket) receive() ([]byte, error) {
 	buf, err := s.receivePacket()
 	if err != nil {
 		return nil, err
