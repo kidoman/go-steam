@@ -18,7 +18,7 @@ func main() {
 	}
 	fmt.Printf("authentication status %v\n", authenticated)
 
-	comm := "quit"
+	comm := "status"
 	resp, err := server.ExecRconCommand(comm)
 	if err != nil {
 		panic(err)

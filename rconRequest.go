@@ -20,11 +20,11 @@ type rconRequest struct {
 	body    string
 }
 
-func newrconRequest(body string) *rconRequest {
+func newrconRequest(reqType int32, body string) *rconRequest {
 	return &rconRequest{
 		size:    int32(len(body) + 10),
 		id:      rand.Int31(),
-		reqType: SERVERDATA_AUTH,
+		reqType: reqType,
 		body:    body,
 	}
 }

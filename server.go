@@ -153,7 +153,7 @@ func (s *Server) AuthenticateRcon(rconpasswd string) (bool, error) {
 		return false, err
 	}
 
-	req := newrconRequest(rconpasswd)
+	req := newrconRequest(SERVERDATA_AUTH, rconpasswd)
 	glog.V(2).Infof("steam: sending rcon auth request: %v", req)
 	packet := req.constructPacket()
 
@@ -180,8 +180,29 @@ func (s *Server) AuthenticateRcon(rconpasswd string) (bool, error) {
 }
 
 func (s *Server) ExecRconCommand(command string) (result string, err error) {
-	if err = s.init(); err != nil {
-		return
+	if err := s.init(); err != nil {
+		return "", err
 	}
-	return
+
+	req := newrconRequest(SERVERDATA_EXECCOMMAND, command)
+	glog.V(2).Infof("steam: sending rcon exec command request: %v", req)
+	packet := req.constructPacket()
+
+	if err := s.tcpSocket.send(packet); err != nil {
+		return "", err
+	}
+
+	resp, err := s.tcpSocket.receive()
+	if err != nil {
+		return "", err
+	}
+
+	commandResp := newRconResponse(resp)
+
+	if req.id != commandResp.id {
+		err := errors.New("steam: response id does not match request id")
+		return "", err
+	}
+
+	return commandResp.body, nil
 }
