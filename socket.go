@@ -3,13 +3,14 @@ package steam
 import (
 	"errors"
 	"net"
+	"time"
 
 	"github.com/golang/glog"
 )
 
 type socket struct {
-	conn  *net.UDPConn
 	raddr *net.UDPAddr
+	conn  *net.UDPConn
 }
 
 func newSocket(addr string) (*socket, error) {
@@ -17,13 +18,11 @@ func newSocket(addr string) (*socket, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	conn, err := net.ListenUDP("udp4", nil)
 	if err != nil {
 		return nil, err
 	}
-
-	return &socket{conn, raddr}, nil
+	return &socket{raddr, conn}, nil
 }
 
 func (s *socket) close() {
@@ -45,14 +44,15 @@ func (s *socket) send(payload []byte) error {
 }
 
 func (s *socket) receivePacket() ([]byte, error) {
+	glog.V(1).Infof("steam: trying to recieve bytes from %v", s.raddr)
 	var buf [1500]byte
+	s.conn.SetReadDeadline(time.Now().Add(1 * time.Second))
 	n, _, err := s.conn.ReadFromUDP(buf[:])
 	if err != nil {
 		return nil, err
 	}
 	glog.V(1).Infof("steam: received %v bytes from %v", n, s.raddr)
 	glog.V(2).Infof("steam: received payload %v: %X", s.raddr, buf[:n])
-
 	return buf[:n], nil
 }
 

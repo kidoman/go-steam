@@ -21,7 +21,10 @@ func main() {
 	for _, address := range addresses {
 		server := &steam.Server{Addr: address}
 		ping, err := server.Ping()
-		must(err)
+		if err != nil {
+			fmt.Printf("Could not ping %v\n", address)
+			continue
+		}
 		info, err := server.Info()
 		must(err)
 		playersInfo, err := server.PlayersInfo()

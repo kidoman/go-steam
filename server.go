@@ -47,18 +47,15 @@ func (s *Server) Ping() (time.Duration, error) {
 	if err := s.init(); err != nil {
 		return 0, err
 	}
-
 	data, err := infoRequest{}.MarshalBinary()
 	if err != nil {
 		return 0, err
 	}
-
 	start := time.Now()
 	s.socket.send(data)
 	if _, err := s.socket.receive(); err != nil {
 		return 0, err
 	}
-
 	elapsed := time.Since(start)
 	return elapsed, nil
 }
