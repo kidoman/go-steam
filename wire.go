@@ -88,9 +88,9 @@ func toInt(v interface{}) int {
 			triggerError(errBadData)
 		}
 		return i
+	default:
+		triggerError(errBadData)
 	}
-
-	triggerError(errBadData)
 
 	panic("unreachable")
 }
