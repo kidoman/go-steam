@@ -274,11 +274,7 @@ func (r playersInfoRequest) MarshalBinary() ([]byte, error) {
 }
 
 func isPlayersInfoChallengeResponse(b []byte) bool {
-	if b[0] == hPlayersInfoChallengeResponse {
-		return true
-	}
-
-	return false
+	return b[0] == hPlayersInfoChallengeResponse
 }
 
 type playersInfoChallengeResponse struct {
