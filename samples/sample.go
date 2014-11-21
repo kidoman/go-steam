@@ -26,9 +26,15 @@ func main() {
 			continue
 		}
 		info, err := server.Info()
-		must(err)
+		if err != nil {
+			fmt.Printf("Could not get server info from %v\n", address)
+			continue
+		}
 		playersInfo, err := server.PlayersInfo()
-		must(err)
+		if err != nil {
+			fmt.Printf("Could not get players info from %v\n", address)
+			continue
+		}
 		fmt.Printf("%v:\n%v with ping %v\n", address, info, ping)
 		if len(playersInfo.Players) > 0 {
 			fmt.Println("Player infos:")
