@@ -139,3 +139,7 @@ func writeLong(buf *bytes.Buffer, v int32) {
 	bytes := [4]byte{byte(v & 0xFF), byte(v >> 8 & 0xFF), byte(v >> 16 & 0xFF), byte(v >> 24 & 0xFF)}
 	buf.Write(bytes[:])
 }
+
+func writeNull(buf *bytes.Buffer) {
+	buf.WriteByte(0)
+}

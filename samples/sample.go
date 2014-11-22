@@ -18,28 +18,28 @@ var addresses = []string{
 func main() {
 	flag.Parse()
 
-	for _, address := range addresses {
-		server := &steam.Server{Addr: address}
+	for _, addr := range addresses {
+		server := &steam.Server{Addr: addr, RCONPassword: "abc"}
 		ping, err := server.Ping()
 		if err != nil {
-			fmt.Printf("Could not ping %v\n", address)
+			fmt.Printf("steam: could not ping %v: %v", addr, err)
 			continue
 		}
 		info, err := server.Info()
 		if err != nil {
-			fmt.Printf("Could not get server info from %v\n", address)
+			fmt.Printf("steam: could not get server info from %v: %v", addr, err)
 			continue
 		}
 		playersInfo, err := server.PlayersInfo()
 		if err != nil {
-			fmt.Printf("Could not get players info from %v\n", address)
+			fmt.Printf("steam: could not get players info from %v: %v", addr, err)
 			continue
 		}
-		fmt.Printf("%v:\n%v with ping %v\n", address, info, ping)
+		fmt.Printf("%v:\n%v with ping %v\n", addr, info, ping)
 		if len(playersInfo.Players) > 0 {
-			fmt.Println("Player infos:")
+			fmt.Println("steam: player infos:")
 			for _, player := range playersInfo.Players {
-				fmt.Printf("%v %v\n", player.Name, player.Score)
+				fmt.Printf("steam: %v %v\n", player.Name, player.Score)
 			}
 		}
 		fmt.Println()

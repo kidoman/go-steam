@@ -3,6 +3,7 @@ package steam
 import (
 	"bytes"
 	"fmt"
+	"math/rand"
 
 	"github.com/golang/glog"
 )
@@ -321,4 +322,63 @@ type Player struct {
 	Name     string
 	Score    int
 	Duration float64
+}
+
+type rconRequestType int32
+
+const (
+	rrtAuth      rconRequestType = 3
+	rrtExecCmd   rconRequestType = 2
+	rrtAuthResp  rconRequestType = 2
+	rrtRespValue rconRequestType = 0
+)
+
+type rconRequest struct {
+	size int32
+	id   int32
+	typ  rconRequestType
+	body string
+}
+
+func newRCONRequest(typ rconRequestType, body string) *rconRequest {
+	return &rconRequest{
+		size: int32(len(body) + 10),
+		id:   rand.Int31(),
+		typ:  typ,
+		body: body,
+	}
+}
+
+func (r *rconRequest) MarshalBinary() ([]byte, error) {
+	var buf bytes.Buffer
+	writeLong(&buf, r.size)
+	writeLong(&buf, r.id)
+	writeLong(&buf, int32(r.typ))
+	buf.WriteString(r.body)
+	writeNull(&buf)
+	writeNull(&buf)
+	return buf.Bytes(), nil
+}
+
+type rconResponse struct {
+	size int32
+	id   int32
+	typ  rconRequestType
+	body string
+}
+
+func (r *rconResponse) UnmarshalBinary(data []byte) (err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			fmt.Print(err)
+			err = e.(parseError)
+		}
+	}()
+	buf := bytes.NewBuffer(data)
+	r.size = readLong(buf)
+	r.id = readLong(buf)
+	r.typ = rconRequestType(readLong(buf))
+	r.body = string(readBytes(buf, int(r.size-8)))
+	glog.V(2).Infof("steam: rconResponse %v", r)
+	return nil
 }
