@@ -308,11 +308,11 @@ func (r *PlayersInfoResponse) UnmarshalBinary(data []byte) (err error) {
 	for i := 0; i < count; i++ {
 		// Read the chunk index
 		readByte(buf)
-		p := new(Player)
+		var p Player
 		p.Name = readString(buf)
 		p.Score = toInt(readLong(buf))
 		p.Duration = float64(readFloat(buf))
-		r.Players = append(r.Players, p)
+		r.Players = append(r.Players, &p)
 	}
 	return nil
 }
