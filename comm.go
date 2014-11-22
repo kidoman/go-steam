@@ -28,7 +28,6 @@ func (st *ServerType) UnmarshalBinary(data []byte) error {
 	default:
 		return errBadData
 	}
-
 	return nil
 }
 
@@ -56,15 +55,16 @@ func (e *Environment) UnmarshalBinary(data []byte) error {
 	switch data[0] {
 	case 'l':
 		*e = ELinux
+		return nil
 	case 'w':
 		*e = EWindows
+		return nil
 	case 'm', 'o':
 		*e = EMac
+		return nil
 	default:
 		return errBadData
 	}
-
-	return nil
 }
 
 func (e Environment) String() string {
@@ -91,13 +91,13 @@ func (v *Visibility) UnmarshalBinary(data []byte) error {
 	switch data[0] {
 	case 0:
 		*v = VPublic
+		return nil
 	case 1:
 		*v = VPrivate
+		return nil
 	default:
 		return errBadData
 	}
-
-	return nil
 }
 
 func (v Visibility) String() string {
@@ -122,13 +122,13 @@ func (v *VAC) UnmarshalBinary(data []byte) error {
 	switch data[0] {
 	case 0:
 		*v = VACUnsecured
+		return nil
 	case 1:
 		*v = VACSecure
+		return nil
 	default:
 		return errBadData
 	}
-
-	return nil
 }
 
 func (v VAC) String() string {
@@ -151,12 +151,10 @@ type infoRequest struct {
 }
 
 func (infoRequest) MarshalBinary() ([]byte, error) {
-	buf := new(bytes.Buffer)
-
-	writeRequestPrefix(buf)
-	writeByte(buf, hInfoRequest)
-	writeString(buf, "Source Engine Query")
-
+	var buf bytes.Buffer
+	writeRequestPrefix(&buf)
+	writeByte(&buf, hInfoRequest)
+	writeString(&buf, "Source Engine Query")
 	return buf.Bytes(), nil
 }
 
@@ -197,19 +195,16 @@ const (
 func (r *InfoResponse) UnmarshalBinary(data []byte) (err error) {
 	defer func() {
 		if e := recover(); e != nil {
+			fmt.Print(err)
 			err = e.(parseError)
 		}
 	}()
-
 	buf := bytes.NewBuffer(data)
-
 	header := readByte(buf)
 	if header != hInfoResponse {
 		triggerError(errBadData)
 	}
-
 	glog.V(1).Info("steam: info response header detected")
-
 	r.Protocol = toInt(readByte(buf))
 	r.Name = readString(buf)
 	r.Map = readString(buf)
@@ -224,14 +219,11 @@ func (r *InfoResponse) UnmarshalBinary(data []byte) (err error) {
 	must(r.Visibility.UnmarshalBinary(readBytes(buf, 1)))
 	must(r.VAC.UnmarshalBinary(readBytes(buf, 1)))
 	r.Version = readString(buf)
-
 	// Check if EDF byte is present
 	if buf.Len() < 1 {
 		return nil
 	}
-
 	glog.V(2).Infof("steam: reading edf data (remaining bytes %v)", buf.Len())
-
 	// EDF byte present
 	edf := readByte(buf)
 	if edf&edfPort != 0 {
@@ -251,7 +243,6 @@ func (r *InfoResponse) UnmarshalBinary(data []byte) (err error) {
 		r.GameID = readLongLong(buf)
 		r.ID = int(r.GameID & 0xFFFFFF)
 	}
-
 	return nil
 }
 
@@ -265,11 +256,9 @@ type playersInfoRequest struct {
 
 func (r playersInfoRequest) MarshalBinary() ([]byte, error) {
 	buf := new(bytes.Buffer)
-
 	writeRequestPrefix(buf)
 	writeByte(buf, hPlayersInfoRequest)
 	writeLong(buf, int32(r.Challenge))
-
 	return buf.Bytes(), nil
 }
 
@@ -287,20 +276,14 @@ func (r *playersInfoChallengeResponse) UnmarshalBinary(data []byte) (err error) 
 			err = e.(parseError)
 		}
 	}()
-
 	buf := bytes.NewBuffer(data)
-
 	header := readByte(buf)
 	if header != hPlayersInfoChallengeResponse {
 		triggerError(errBadData)
 	}
-
 	glog.V(1).Info("steam: players info challenge response header detected")
-
 	r.Challenge = toInt(readLong(buf))
-
 	glog.V(2).Infof("steam: challenge number %#X", r.Challenge)
-
 	return nil
 }
 
@@ -314,30 +297,23 @@ func (r *PlayersInfoResponse) UnmarshalBinary(data []byte) (err error) {
 			err = e.(parseError)
 		}
 	}()
-
 	buf := bytes.NewBuffer(data)
-
 	header := readByte(buf)
 	if header != hPlayersInfoResponse {
 		triggerError(errBadData)
 	}
-
 	glog.V(1).Info("steam: players info response header detected")
-
 	count := toInt(readByte(buf))
 	glog.V(2).Infof("steam: received %v player info(s)", count)
 	for i := 0; i < count; i++ {
 		// Read the chunk index
 		readByte(buf)
-
 		p := new(Player)
 		p.Name = readString(buf)
 		p.Score = toInt(readLong(buf))
 		p.Duration = float64(readFloat(buf))
-
 		r.Players = append(r.Players, p)
 	}
-
 	return nil
 }
 
