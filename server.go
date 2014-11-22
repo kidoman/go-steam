@@ -10,7 +10,7 @@ type Server struct {
 	// IP:Port combination designating a single server.
 	Addr string
 
-	socket *socket
+	usock *udpSocket
 
 	initialized bool
 }
@@ -25,7 +25,7 @@ func (s *Server) init() error {
 	}
 
 	var err error
-	if s.socket, err = newSocket(s.Addr); err != nil {
+	if s.usock, err = newUDPSocket(s.Addr); err != nil {
 		return err
 	}
 
@@ -39,7 +39,7 @@ func (s *Server) Close() {
 		return
 	}
 
-	s.socket.close()
+	s.usock.close()
 }
 
 // Ping returns the RTT (round-trip time) to the server.
@@ -52,8 +52,8 @@ func (s *Server) Ping() (time.Duration, error) {
 		return 0, err
 	}
 	start := time.Now()
-	s.socket.send(data)
-	if _, err := s.socket.receive(); err != nil {
+	s.usock.send(data)
+	if _, err := s.usock.receive(); err != nil {
 		return 0, err
 	}
 	elapsed := time.Since(start)
@@ -71,10 +71,10 @@ func (s *Server) Info() (*InfoResponse, error) {
 		return nil, err
 	}
 
-	if err := s.socket.send(data); err != nil {
+	if err := s.usock.send(data); err != nil {
 		return nil, err
 	}
-	b, err := s.socket.receive()
+	b, err := s.usock.receive()
 	if err != nil {
 		return nil, err
 	}
@@ -98,10 +98,10 @@ func (s *Server) PlayersInfo() (*PlayersInfoResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := s.socket.send(data); err != nil {
+	if err := s.usock.send(data); err != nil {
 		return nil, err
 	}
-	b, err := s.socket.receive()
+	b, err := s.usock.receive()
 	if err != nil {
 		return nil, err
 	}
@@ -118,10 +118,10 @@ func (s *Server) PlayersInfo() (*PlayersInfoResponse, error) {
 		if err != nil {
 			return nil, err
 		}
-		if err := s.socket.send(data); err != nil {
+		if err := s.usock.send(data); err != nil {
 			return nil, err
 		}
-		b, err = s.socket.receive()
+		b, err = s.usock.receive()
 		if err != nil {
 			return nil, err
 		}

@@ -8,23 +8,23 @@ import (
 	"github.com/golang/glog"
 )
 
-type socket struct {
+type udpSocket struct {
 	conn net.Conn
 }
 
-func newSocket(addr string) (*socket, error) {
+func newUDPSocket(addr string) (*udpSocket, error) {
 	conn, err := net.DialTimeout("udp4", addr, time.Second)
 	if err != nil {
 		return nil, err
 	}
-	return &socket{conn}, nil
+	return &udpSocket{conn}, nil
 }
 
-func (s *socket) close() {
+func (s *udpSocket) close() {
 	s.conn.Close()
 }
 
-func (s *socket) send(payload []byte) error {
+func (s *udpSocket) send(payload []byte) error {
 	glog.V(1).Infof("steam: sending %v bytes payload to %v", len(payload), s.conn.RemoteAddr())
 	glog.V(2).Infof("steam: sending payload to %v: %X", s.conn.RemoteAddr(), payload)
 	n, err := s.conn.Write(payload)
@@ -37,7 +37,7 @@ func (s *socket) send(payload []byte) error {
 	return nil
 }
 
-func (s *socket) receivePacket() ([]byte, error) {
+func (s *udpSocket) receivePacket() ([]byte, error) {
 	glog.V(1).Infof("steam: trying to recieve bytes from %v", s.conn.RemoteAddr())
 	var buf [1500]byte
 	s.conn.SetReadDeadline(time.Now().Add(1 * time.Second))
@@ -50,7 +50,7 @@ func (s *socket) receivePacket() ([]byte, error) {
 	return buf[:n], nil
 }
 
-func (s *socket) receive() ([]byte, error) {
+func (s *udpSocket) receive() ([]byte, error) {
 	buf, err := s.receivePacket()
 	if err != nil {
 		return nil, err
