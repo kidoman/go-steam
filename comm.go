@@ -340,6 +340,10 @@ type rconRequest struct {
 	body string
 }
 
+func (r *rconRequest) String() string {
+	return fmt.Sprintf("%v %v %v %v", r.size, r.id, r.typ, r.body)
+}
+
 func newRCONRequest(typ rconRequestType, body string) *rconRequest {
 	return &rconRequest{
 		size: int32(len(body) + 10),
@@ -350,6 +354,7 @@ func newRCONRequest(typ rconRequestType, body string) *rconRequest {
 }
 
 func (r *rconRequest) MarshalBinary() ([]byte, error) {
+	glog.V(2).Infof("steam: rconRequest %v", r)
 	var buf bytes.Buffer
 	writeLong(&buf, r.size)
 	writeLong(&buf, r.id)
@@ -365,6 +370,10 @@ type rconResponse struct {
 	id   int32
 	typ  rconRequestType
 	body string
+}
+
+func (r *rconResponse) String() string {
+	return fmt.Sprintf("%v %v %v %v", r.size, r.id, r.typ, r.body)
 }
 
 func (r *rconResponse) UnmarshalBinary(data []byte) (err error) {

@@ -8,86 +8,130 @@ import (
 )
 
 // Server represents a Source server.
-type Server struct {
-	// IP:Port combination designating a single server.
-	Addr string
-
-	RCONPassword string
+type server struct {
+	addr         string
+	rconPassword string
 
 	usock *udpSocket
 	tsock *tcpSocket
 
-	initialized     bool
 	rconInitialized bool
 }
 
-func (s *Server) init() error {
-	if s.initialized {
-		return nil
+func Connect(addr string) (*server, error) {
+	s := &server{
+		addr: addr,
 	}
-	if s.Addr == "" {
+	if err := s.init(); err != nil {
+		return nil, err
+	}
+	return s, nil
+}
+
+func ConnectAuth(addr, rconPassword string) (s *server, err error) {
+	s = &server{
+		addr:         addr,
+		rconPassword: rconPassword,
+	}
+	if err := s.init(); err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err != nil {
+			s.usock.close()
+		}
+	}()
+	if err := s.initRCON(); err != nil {
+		return nil, err
+	}
+	return s, nil
+}
+
+func (s *server) String() string {
+	return s.addr
+}
+
+func (s *server) init() error {
+	if s.addr == "" {
 		return errors.New("steam: server needs a address")
 	}
 	var err error
-	if s.usock, err = newUDPSocket(s.Addr); err != nil {
-		glog.Errorf("server: could not create udp socket to %v: %v", s.Addr, err)
+	if s.usock, err = newUDPSocket(s.addr); err != nil {
+		glog.Errorf("server: could not create udp socket to %v: %v", s.addr, err)
 		return err
 	}
-	if s.RCONPassword == "" {
-		if s.tsock, err = newTCPSocket(s.Addr); err != nil {
-			glog.Errorf("server: could not create tcp socket to %v: %v", s.Addr, err)
-			return err
-		}
-		ok, err := s.authenticate()
-		if err != nil {
-			glog.Errorf("server: could not authenticate rcon to %v: %v", s.Addr, err)
-			return err
-		}
-		if !ok {
-			return errors.New("steam: rcon authentication failed")
-		}
-		s.rconInitialized = true
-	}
-	s.initialized = true
 	return nil
 }
 
-func (s *Server) authenticate() (bool, error) {
-	req := newRCONRequest(rrtAuth, s.RCONPassword)
+func (s *server) initRCON() (err error) {
+	if s.addr == "" {
+		return errors.New("steam: server needs a address")
+	}
+	if s.tsock, err = newTCPSocket(s.addr); err != nil {
+		glog.Errorf("server: could not create tcp socket to %v: %v", s.addr, err)
+		return err
+	}
+	defer func() {
+		if err != nil {
+			s.tsock.close()
+		}
+	}()
+	if err := s.authenticate(); err != nil {
+		glog.Errorf("server: could not authenticate rcon to %v: %v", s.addr, err)
+		return err
+	}
+	s.rconInitialized = true
+	return nil
+}
+
+func (s *server) authenticate() error {
+	req := newRCONRequest(rrtAuth, s.rconPassword)
 	glog.V(2).Infof("steam: sending rcon auth request: %v", req)
 	data, _ := req.MarshalBinary()
 	if err := s.tsock.send(data); err != nil {
-		return false, err
+		return err
 	}
+	// Receive the empty response value
 	data, err := s.tsock.receive()
 	if err != nil {
-		return false, err
+		return err
 	}
 	var resp rconResponse
 	if err := resp.UnmarshalBinary(data); err != nil {
-		return false, err
+		return err
+	}
+	glog.V(2).Infof("steam: received response %v", resp)
+	if resp.typ != rrtRespValue || resp.id != req.id {
+		return ErrInvalidResponseID
 	}
 	if resp.id != req.id {
-		return false, nil
+		return ErrInvalidResponseType
 	}
-	return true, nil
+	// Receive the actual auth response
+	data, err = s.tsock.receive()
+	if err != nil {
+		return err
+	}
+	if err := resp.UnmarshalBinary(data); err != nil {
+		return err
+	}
+	glog.V(2).Infof("steam: received response %v", resp)
+	if resp.typ != rrtAuthResp || resp.id != req.id {
+		return ErrRCONAuthFailed
+	}
+	return nil
 }
 
 // Close releases the resources associated with this server.
-func (s *Server) Close() {
-	if !s.initialized {
-		return
+func (s *server) Close() {
+	if s.rconInitialized {
+		s.tsock.close()
 	}
-
 	s.usock.close()
-	s.tsock.close()
 }
 
 // Ping returns the RTT (round-trip time) to the server.
-func (s *Server) Ping() (time.Duration, error) {
-	if err := s.init(); err != nil {
-		return 0, err
-	}
+func (s *server) Ping() (time.Duration, error) {
 	req, _ := infoRequest{}.MarshalBinary()
 	start := time.Now()
 	s.usock.send(req)
@@ -99,10 +143,7 @@ func (s *Server) Ping() (time.Duration, error) {
 }
 
 // Info retrieves server information.
-func (s *Server) Info() (*InfoResponse, error) {
-	if err := s.init(); err != nil {
-		return nil, err
-	}
+func (s *server) Info() (*InfoResponse, error) {
 	req, _ := infoRequest{}.MarshalBinary()
 	if err := s.usock.send(req); err != nil {
 		return nil, err
@@ -119,10 +160,7 @@ func (s *Server) Info() (*InfoResponse, error) {
 }
 
 // PlayersInfo retrieves player information from the server.
-func (s *Server) PlayersInfo() (*PlayersInfoResponse, error) {
-	if err := s.init(); err != nil {
-		return nil, err
-	}
+func (s *server) PlayersInfo() (*PlayersInfoResponse, error) {
 	// Send the challenge request
 	req, _ := playersInfoRequest{}.MarshalBinary()
 	if err := s.usock.send(req); err != nil {
@@ -156,12 +194,9 @@ func (s *Server) PlayersInfo() (*PlayersInfoResponse, error) {
 	return &res, nil
 }
 
-func (s *Server) Send(cmd string) (string, error) {
-	if err := s.init(); err != nil {
-		return "", err
-	}
+func (s *server) Send(cmd string) (string, error) {
 	if !s.rconInitialized {
-		return "", errors.New("steam: rcon is not initialized")
+		return "", ErrRCONNotInitialized
 	}
 	req := newRCONRequest(rrtExecCmd, cmd)
 	glog.V(2).Infof("steam: sending rcon exec command request: %v", req)
@@ -177,9 +212,20 @@ func (s *Server) Send(cmd string) (string, error) {
 	if err := resp.UnmarshalBinary(data); err != nil {
 		return "", err
 	}
+	glog.V(2).Infof("steam: received response %v", resp)
+	if resp.typ != rrtRespValue {
+		return "", ErrInvalidResponseType
+	}
 	if req.id != resp.id {
-		err := errors.New("steam: response id does not match request id")
-		return "", err
+		return "", ErrInvalidResponseID
 	}
 	return resp.body, nil
 }
+
+var (
+	ErrRCONAuthFailed = errors.New("steam: authentication failed")
+
+	ErrRCONNotInitialized  = errors.New("steam: rcon is not initialized")
+	ErrInvalidResponseType = errors.New("steam: invalid response from server")
+	ErrInvalidResponseID   = errors.New("steam: invalid response from server")
+)

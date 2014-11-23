@@ -19,7 +19,11 @@ func main() {
 	flag.Parse()
 
 	for _, addr := range addresses {
-		server := &steam.Server{Addr: addr, RCONPassword: "abc"}
+		server, err := steam.Connect(addr)
+		if err != nil {
+			panic(err)
+		}
+		defer server.Close()
 		ping, err := server.Ping()
 		if err != nil {
 			fmt.Printf("steam: could not ping %v: %v", addr, err)
@@ -42,6 +46,12 @@ func main() {
 				fmt.Printf("steam: %v %v\n", player.Name, player.Score)
 			}
 		}
+		reply, err := server.Send("status")
+		if err != nil {
+			fmt.Printf("steam: error with rcon to %v: %v", server, err)
+			continue
+		}
+		fmt.Printf("steam: reply from %v %q", server, reply)
 		fmt.Println()
 	}
 }
