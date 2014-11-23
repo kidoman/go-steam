@@ -18,7 +18,7 @@ const (
 
 type ServerType int
 
-func (st *ServerType) UnmarshalBinary(data []byte) error {
+func (st *ServerType) unmarshalBinary(data []byte) error {
 	switch data[0] {
 	case 'd':
 		*st = STDedicated
@@ -52,7 +52,7 @@ var serverTypeStrings = map[ServerType]string{
 
 type Environment int
 
-func (e *Environment) UnmarshalBinary(data []byte) error {
+func (e *Environment) unmarshalBinary(data []byte) error {
 	switch data[0] {
 	case 'l':
 		*e = ELinux
@@ -88,7 +88,7 @@ var environmentStrings = map[Environment]string{
 
 type Visibility int
 
-func (v *Visibility) UnmarshalBinary(data []byte) error {
+func (v *Visibility) unmarshalBinary(data []byte) error {
 	switch data[0] {
 	case 0:
 		*v = VPublic
@@ -119,7 +119,7 @@ var visibilityStrings = map[Visibility]string{
 
 type VAC int
 
-func (v *VAC) UnmarshalBinary(data []byte) error {
+func (v *VAC) unmarshalBinary(data []byte) error {
 	switch data[0] {
 	case 0:
 		*v = VACUnsecured
@@ -151,7 +151,7 @@ var vacStrings = map[VAC]string{
 type infoRequest struct {
 }
 
-func (infoRequest) MarshalBinary() ([]byte, error) {
+func (infoRequest) marshalBinary() ([]byte, error) {
 	var buf bytes.Buffer
 	writeRequestPrefix(&buf)
 	writeByte(&buf, hInfoRequest)
@@ -193,7 +193,7 @@ const (
 	edfGameID   = 0x01
 )
 
-func (r *InfoResponse) UnmarshalBinary(data []byte) (err error) {
+func (r *InfoResponse) unmarshalBinary(data []byte) (err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			fmt.Print(err)
@@ -215,10 +215,10 @@ func (r *InfoResponse) UnmarshalBinary(data []byte) (err error) {
 	r.Players = toInt(readByte(buf))
 	r.MaxPlayers = toInt(readByte(buf))
 	r.Bots = toInt(readByte(buf))
-	must(r.ServerType.UnmarshalBinary(readBytes(buf, 1)))
-	must(r.Environment.UnmarshalBinary(readBytes(buf, 1)))
-	must(r.Visibility.UnmarshalBinary(readBytes(buf, 1)))
-	must(r.VAC.UnmarshalBinary(readBytes(buf, 1)))
+	must(r.ServerType.unmarshalBinary(readBytes(buf, 1)))
+	must(r.Environment.unmarshalBinary(readBytes(buf, 1)))
+	must(r.Visibility.unmarshalBinary(readBytes(buf, 1)))
+	must(r.VAC.unmarshalBinary(readBytes(buf, 1)))
 	r.Version = readString(buf)
 	// Check if EDF byte is present
 	if buf.Len() < 1 {
@@ -255,7 +255,7 @@ type playersInfoRequest struct {
 	Challenge int
 }
 
-func (r playersInfoRequest) MarshalBinary() ([]byte, error) {
+func (r playersInfoRequest) marshalBinary() ([]byte, error) {
 	buf := new(bytes.Buffer)
 	writeRequestPrefix(buf)
 	writeByte(buf, hPlayersInfoRequest)
@@ -271,7 +271,7 @@ type playersInfoChallengeResponse struct {
 	Challenge int
 }
 
-func (r *playersInfoChallengeResponse) UnmarshalBinary(data []byte) (err error) {
+func (r *playersInfoChallengeResponse) unmarshalBinary(data []byte) (err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			err = e.(parseError)
@@ -292,7 +292,7 @@ type PlayersInfoResponse struct {
 	Players []*Player
 }
 
-func (r *PlayersInfoResponse) UnmarshalBinary(data []byte) (err error) {
+func (r *PlayersInfoResponse) unmarshalBinary(data []byte) (err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			err = e.(parseError)
@@ -353,7 +353,7 @@ func newRCONRequest(typ rconRequestType, body string) *rconRequest {
 	}
 }
 
-func (r *rconRequest) MarshalBinary() ([]byte, error) {
+func (r *rconRequest) marshalBinary() ([]byte, error) {
 	glog.V(2).Infof("steam: rconRequest %v", r)
 	var buf bytes.Buffer
 	writeLong(&buf, r.size)
@@ -376,7 +376,7 @@ func (r *rconResponse) String() string {
 	return fmt.Sprintf("%v %v %v %v", r.size, r.id, r.typ, r.body)
 }
 
-func (r *rconResponse) UnmarshalBinary(data []byte) (err error) {
+func (r *rconResponse) unmarshalBinary(data []byte) (err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			fmt.Print(err)

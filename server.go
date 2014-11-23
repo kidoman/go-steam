@@ -87,7 +87,7 @@ func (s *Server) initRCON() (err error) {
 func (s *Server) authenticate() error {
 	req := newRCONRequest(rrtAuth, s.rconPassword)
 	glog.V(2).Infof("steam: sending rcon auth request: %v", req)
-	data, _ := req.MarshalBinary()
+	data, _ := req.marshalBinary()
 	if err := s.tsock.send(data); err != nil {
 		return err
 	}
@@ -97,7 +97,7 @@ func (s *Server) authenticate() error {
 		return err
 	}
 	var resp rconResponse
-	if err := resp.UnmarshalBinary(data); err != nil {
+	if err := resp.unmarshalBinary(data); err != nil {
 		return err
 	}
 	glog.V(2).Infof("steam: received response %v", resp)
@@ -112,7 +112,7 @@ func (s *Server) authenticate() error {
 	if err != nil {
 		return err
 	}
-	if err := resp.UnmarshalBinary(data); err != nil {
+	if err := resp.unmarshalBinary(data); err != nil {
 		return err
 	}
 	glog.V(2).Infof("steam: received response %v", resp)
@@ -132,7 +132,7 @@ func (s *Server) Close() {
 
 // Ping returns the RTT (round-trip time) to the server.
 func (s *Server) Ping() (time.Duration, error) {
-	req, _ := infoRequest{}.MarshalBinary()
+	req, _ := infoRequest{}.marshalBinary()
 	start := time.Now()
 	s.usock.send(req)
 	if _, err := s.usock.receive(); err != nil {
@@ -144,7 +144,7 @@ func (s *Server) Ping() (time.Duration, error) {
 
 // Info retrieves server information.
 func (s *Server) Info() (*InfoResponse, error) {
-	req, _ := infoRequest{}.MarshalBinary()
+	req, _ := infoRequest{}.marshalBinary()
 	if err := s.usock.send(req); err != nil {
 		return nil, err
 	}
@@ -153,7 +153,7 @@ func (s *Server) Info() (*InfoResponse, error) {
 		return nil, err
 	}
 	var res InfoResponse
-	if err := res.UnmarshalBinary(data); err != nil {
+	if err := res.unmarshalBinary(data); err != nil {
 		return nil, err
 	}
 	return &res, nil
@@ -162,7 +162,7 @@ func (s *Server) Info() (*InfoResponse, error) {
 // PlayersInfo retrieves player information from the server.
 func (s *Server) PlayersInfo() (*PlayersInfoResponse, error) {
 	// Send the challenge request
-	req, _ := playersInfoRequest{}.MarshalBinary()
+	req, _ := playersInfoRequest{}.marshalBinary()
 	if err := s.usock.send(req); err != nil {
 		return nil, err
 	}
@@ -173,11 +173,11 @@ func (s *Server) PlayersInfo() (*PlayersInfoResponse, error) {
 	if isPlayersInfoChallengeResponse(data) {
 		// Parse the challenge response
 		var challangeRes playersInfoChallengeResponse
-		if err := challangeRes.UnmarshalBinary(data); err != nil {
+		if err := challangeRes.unmarshalBinary(data); err != nil {
 			return nil, err
 		}
 		// Send a new request with the proper challenge number
-		req, _ = playersInfoRequest{challangeRes.Challenge}.MarshalBinary()
+		req, _ = playersInfoRequest{challangeRes.Challenge}.marshalBinary()
 		if err := s.usock.send(req); err != nil {
 			return nil, err
 		}
@@ -188,7 +188,7 @@ func (s *Server) PlayersInfo() (*PlayersInfoResponse, error) {
 	}
 	// Parse the return value
 	var res PlayersInfoResponse
-	if err := res.UnmarshalBinary(data); err != nil {
+	if err := res.unmarshalBinary(data); err != nil {
 		return nil, err
 	}
 	return &res, nil
@@ -200,7 +200,7 @@ func (s *Server) Send(cmd string) (string, error) {
 	}
 	req := newRCONRequest(rrtExecCmd, cmd)
 	glog.V(2).Infof("steam: sending rcon exec command request: %v", req)
-	data, _ := req.MarshalBinary()
+	data, _ := req.marshalBinary()
 	if err := s.tsock.send(data); err != nil {
 		return "", err
 	}
@@ -209,7 +209,7 @@ func (s *Server) Send(cmd string) (string, error) {
 		return "", err
 	}
 	var resp rconResponse
-	if err := resp.UnmarshalBinary(data); err != nil {
+	if err := resp.unmarshalBinary(data); err != nil {
 		return "", err
 	}
 	glog.V(2).Infof("steam: received response %v", resp)
