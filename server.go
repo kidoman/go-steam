@@ -7,8 +7,8 @@ import (
 	"github.com/golang/glog"
 )
 
-// Server represents a Source server.
-type server struct {
+// Server represents a Source engine game server.
+type Server struct {
 	addr         string
 	rconPassword string
 
@@ -18,8 +18,8 @@ type server struct {
 	rconInitialized bool
 }
 
-func Connect(addr string) (*server, error) {
-	s := &server{
+func Connect(addr string) (*Server, error) {
+	s := &Server{
 		addr: addr,
 	}
 	if err := s.init(); err != nil {
@@ -28,8 +28,8 @@ func Connect(addr string) (*server, error) {
 	return s, nil
 }
 
-func ConnectAuth(addr, rconPassword string) (s *server, err error) {
-	s = &server{
+func ConnectAuth(addr, rconPassword string) (s *Server, err error) {
+	s = &Server{
 		addr:         addr,
 		rconPassword: rconPassword,
 	}
@@ -47,11 +47,11 @@ func ConnectAuth(addr, rconPassword string) (s *server, err error) {
 	return s, nil
 }
 
-func (s *server) String() string {
+func (s *Server) String() string {
 	return s.addr
 }
 
-func (s *server) init() error {
+func (s *Server) init() error {
 	if s.addr == "" {
 		return errors.New("steam: server needs a address")
 	}
@@ -63,7 +63,7 @@ func (s *server) init() error {
 	return nil
 }
 
-func (s *server) initRCON() (err error) {
+func (s *Server) initRCON() (err error) {
 	if s.addr == "" {
 		return errors.New("steam: server needs a address")
 	}
@@ -84,7 +84,7 @@ func (s *server) initRCON() (err error) {
 	return nil
 }
 
-func (s *server) authenticate() error {
+func (s *Server) authenticate() error {
 	req := newRCONRequest(rrtAuth, s.rconPassword)
 	glog.V(2).Infof("steam: sending rcon auth request: %v", req)
 	data, _ := req.MarshalBinary()
@@ -123,7 +123,7 @@ func (s *server) authenticate() error {
 }
 
 // Close releases the resources associated with this server.
-func (s *server) Close() {
+func (s *Server) Close() {
 	if s.rconInitialized {
 		s.tsock.close()
 	}
@@ -131,7 +131,7 @@ func (s *server) Close() {
 }
 
 // Ping returns the RTT (round-trip time) to the server.
-func (s *server) Ping() (time.Duration, error) {
+func (s *Server) Ping() (time.Duration, error) {
 	req, _ := infoRequest{}.MarshalBinary()
 	start := time.Now()
 	s.usock.send(req)
@@ -143,7 +143,7 @@ func (s *server) Ping() (time.Duration, error) {
 }
 
 // Info retrieves server information.
-func (s *server) Info() (*InfoResponse, error) {
+func (s *Server) Info() (*InfoResponse, error) {
 	req, _ := infoRequest{}.MarshalBinary()
 	if err := s.usock.send(req); err != nil {
 		return nil, err
@@ -160,7 +160,7 @@ func (s *server) Info() (*InfoResponse, error) {
 }
 
 // PlayersInfo retrieves player information from the server.
-func (s *server) PlayersInfo() (*PlayersInfoResponse, error) {
+func (s *Server) PlayersInfo() (*PlayersInfoResponse, error) {
 	// Send the challenge request
 	req, _ := playersInfoRequest{}.MarshalBinary()
 	if err := s.usock.send(req); err != nil {
@@ -194,7 +194,7 @@ func (s *server) PlayersInfo() (*PlayersInfoResponse, error) {
 	return &res, nil
 }
 
-func (s *server) Send(cmd string) (string, error) {
+func (s *Server) Send(cmd string) (string, error) {
 	if !s.rconInitialized {
 		return "", ErrRCONNotInitialized
 	}
