@@ -18,6 +18,7 @@ type Server struct {
 	rconInitialized bool
 }
 
+// Connect to the provided source server.
 func Connect(addr string) (*Server, error) {
 	s := &Server{
 		addr: addr,
@@ -28,6 +29,7 @@ func Connect(addr string) (*Server, error) {
 	return s, nil
 }
 
+// Connect and authenticate (rcon) to the source server.
 func ConnectAuth(addr, rconPassword string) (s *Server, err error) {
 	s = &Server{
 		addr:         addr,
@@ -194,6 +196,7 @@ func (s *Server) PlayersInfo() (*PlayersInfoResponse, error) {
 	return &res, nil
 }
 
+// Send RCON command to the server.
 func (s *Server) Send(cmd string) (string, error) {
 	if !s.rconInitialized {
 		return "", ErrRCONNotInitialized
