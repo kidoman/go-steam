@@ -13,8 +13,8 @@ type udpSocket struct {
 	conn net.Conn
 }
 
-func newUDPSocket(addr string) (*udpSocket, error) {
-	conn, err := Dial("udp4", addr)
+func newUDPSocket(dial DialFn, addr string) (*udpSocket, error) {
+	conn, err := dial("udp4", addr)
 	if err != nil {
 		glog.Errorf("steam: could not dial udp to %v: %v", addr, err)
 		return nil, err

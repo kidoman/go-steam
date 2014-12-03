@@ -2,41 +2,60 @@ package steam
 
 import (
 	"errors"
+	"net"
 	"time"
 
 	"github.com/golang/glog"
 )
 
+type DialFn func(network, address string) (net.Conn, error)
+
 // Server represents a Source engine game server.
 type Server struct {
-	addr         string
+	addr string
+
+	dial DialFn
+
 	rconPassword string
 
-	usock *udpSocket
-	tsock *tcpSocket
+	usock          *udpSocket
+	udpInitialized bool
 
+	tsock           *tcpSocket
 	rconInitialized bool
 }
 
-// Connect to the provided source server.
-func Connect(addr string) (*Server, error) {
-	s := &Server{
-		addr: addr,
-	}
-	if err := s.init(); err != nil {
-		return nil, err
-	}
-	return s, nil
+// ConnectOptions describes the various connections options.
+type ConnectOptions struct {
+	// Default will use net.Dialer.Dial. You can override the same by
+	// providing your own.
+	Dial DialFn
+
+	// RCON password.
+	RCONPassword string
 }
 
-// Connect and authenticate (rcon) to the source server.
-func ConnectAuth(addr, rconPassword string) (s *Server, err error) {
+// Connect to the source server.
+func Connect(addr string, os ...*ConnectOptions) (s *Server, err error) {
 	s = &Server{
-		addr:         addr,
-		rconPassword: rconPassword,
+		addr: addr,
+	}
+	if len(os) > 0 {
+		o := os[0]
+		s.dial = o.Dial
+		s.rconPassword = o.RCONPassword
+	}
+	if s.dial == nil {
+		s.dial = (&net.Dialer{
+			Timeout:   5 * time.Second,
+			KeepAlive: 5 * time.Minute,
+		}).Dial
 	}
 	if err := s.init(); err != nil {
 		return nil, err
+	}
+	if s.rconPassword == "" {
+		return s, nil
 	}
 	defer func() {
 		if err != nil {
@@ -58,7 +77,7 @@ func (s *Server) init() error {
 		return errors.New("steam: server needs a address")
 	}
 	var err error
-	if s.usock, err = newUDPSocket(s.addr); err != nil {
+	if s.usock, err = newUDPSocket(s.dial, s.addr); err != nil {
 		glog.Errorf("server: could not create udp socket to %v: %v", s.addr, err)
 		return err
 	}
@@ -69,7 +88,7 @@ func (s *Server) initRCON() (err error) {
 	if s.addr == "" {
 		return errors.New("steam: server needs a address")
 	}
-	if s.tsock, err = newTCPSocket(s.addr); err != nil {
+	if s.tsock, err = newTCPSocket(s.dial, s.addr); err != nil {
 		glog.Errorf("server: could not create tcp socket to %v: %v", s.addr, err)
 		return err
 	}

@@ -12,8 +12,8 @@ type tcpSocket struct {
 	conn net.Conn
 }
 
-func newTCPSocket(addr string) (*tcpSocket, error) {
-	conn, err := Dial("tcp4", addr)
+func newTCPSocket(dial DialFn, addr string) (*tcpSocket, error) {
+	conn, err := dial("tcp4", addr)
 	if err != nil {
 		glog.Errorf("steam: could not dial tcp to %v: %v", addr, err)
 		return nil, err
