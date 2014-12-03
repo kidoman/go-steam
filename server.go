@@ -47,8 +47,7 @@ func Connect(addr string, os ...*ConnectOptions) (s *Server, err error) {
 	}
 	if s.dial == nil {
 		s.dial = (&net.Dialer{
-			Timeout:   5 * time.Second,
-			KeepAlive: 5 * time.Minute,
+			Timeout: 5 * time.Second,
 		}).Dial
 	}
 	if err := s.init(); err != nil {
