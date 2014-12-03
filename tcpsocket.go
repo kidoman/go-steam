@@ -13,7 +13,7 @@ type tcpSocket struct {
 }
 
 func newTCPSocket(addr string) (*tcpSocket, error) {
-	conn, err := net.DialTimeout("tcp4", addr, time.Second)
+	conn, err := Dial("tcp4", addr)
 	if err != nil {
 		glog.Errorf("steam: could not dial tcp to %v: %v", addr, err)
 		return nil, err

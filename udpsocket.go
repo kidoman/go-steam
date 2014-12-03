@@ -14,7 +14,7 @@ type udpSocket struct {
 }
 
 func newUDPSocket(addr string) (*udpSocket, error) {
-	conn, err := net.DialTimeout("udp4", addr, time.Second)
+	conn, err := Dial("udp4", addr)
 	if err != nil {
 		glog.Errorf("steam: could not dial udp to %v: %v", addr, err)
 		return nil, err
