@@ -36,8 +36,8 @@ type ConnectOptions struct {
 }
 
 // Connect to the source server.
-func Connect(addr string, os ...*ConnectOptions) (s *Server, err error) {
-	s = &Server{
+func Connect(addr string, os ...*ConnectOptions) (_ *Server, err error) {
+	s := &Server{
 		addr: addr,
 	}
 	if len(os) > 0 {
