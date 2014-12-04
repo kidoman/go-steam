@@ -77,7 +77,7 @@ func (s *Server) init() error {
 	}
 	var err error
 	if s.usock, err = newUDPSocket(s.dial, s.addr); err != nil {
-		log.Errorf("server: could not create udp socket to %v: %v", s.addr, err)
+		log.Errorf("steam: could not create udp socket to %v: %v", s.addr, err)
 		return err
 	}
 	return nil
@@ -88,7 +88,7 @@ func (s *Server) initRCON() (err error) {
 		return errors.New("steam: server needs a address")
 	}
 	if s.tsock, err = newTCPSocket(s.dial, s.addr); err != nil {
-		log.Errorf("server: could not create tcp socket to %v: %v", s.addr, err)
+		log.Errorf("steam: could not create tcp socket to %v: %v", s.addr, err)
 		return err
 	}
 	defer func() {
@@ -97,7 +97,7 @@ func (s *Server) initRCON() (err error) {
 		}
 	}()
 	if err := s.authenticate(); err != nil {
-		log.Errorf("server: could not authenticate rcon to %v: %v", s.addr, err)
+		log.Errorf("steam: could not authenticate rcon to %v: %v", s.addr, err)
 		return err
 	}
 	s.rconInitialized = true
