@@ -5,7 +5,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/golang/glog"
+	log "github.com/Sirupsen/logrus"
 )
 
 type DialFn func(network, address string) (net.Conn, error)
@@ -77,7 +77,7 @@ func (s *Server) init() error {
 	}
 	var err error
 	if s.usock, err = newUDPSocket(s.dial, s.addr); err != nil {
-		glog.Errorf("server: could not create udp socket to %v: %v", s.addr, err)
+		log.Errorf("server: could not create udp socket to %v: %v", s.addr, err)
 		return err
 	}
 	return nil
@@ -88,7 +88,7 @@ func (s *Server) initRCON() (err error) {
 		return errors.New("steam: server needs a address")
 	}
 	if s.tsock, err = newTCPSocket(s.dial, s.addr); err != nil {
-		glog.Errorf("server: could not create tcp socket to %v: %v", s.addr, err)
+		log.Errorf("server: could not create tcp socket to %v: %v", s.addr, err)
 		return err
 	}
 	defer func() {
@@ -97,7 +97,7 @@ func (s *Server) initRCON() (err error) {
 		}
 	}()
 	if err := s.authenticate(); err != nil {
-		glog.Errorf("server: could not authenticate rcon to %v: %v", s.addr, err)
+		log.Errorf("server: could not authenticate rcon to %v: %v", s.addr, err)
 		return err
 	}
 	s.rconInitialized = true
@@ -106,7 +106,7 @@ func (s *Server) initRCON() (err error) {
 
 func (s *Server) authenticate() error {
 	req := newRCONRequest(rrtAuth, s.rconPassword)
-	glog.V(2).Infof("steam: sending rcon auth request: %v", req)
+	log.Debugf("steam: sending rcon auth request: %v", req)
 	data, _ := req.marshalBinary()
 	if err := s.tsock.send(data); err != nil {
 		return err
@@ -120,7 +120,7 @@ func (s *Server) authenticate() error {
 	if err := resp.unmarshalBinary(data); err != nil {
 		return err
 	}
-	glog.V(2).Infof("steam: received response %v", resp)
+	log.Debugf("steam: received response %v", resp)
 	if resp.typ != rrtRespValue || resp.id != req.id {
 		return ErrInvalidResponseID
 	}
@@ -135,7 +135,7 @@ func (s *Server) authenticate() error {
 	if err := resp.unmarshalBinary(data); err != nil {
 		return err
 	}
-	glog.V(2).Infof("steam: received response %v", resp)
+	log.Debugf("steam: received response %v", resp)
 	if resp.typ != rrtAuthResp || resp.id != req.id {
 		return ErrRCONAuthFailed
 	}
@@ -220,7 +220,7 @@ func (s *Server) Send(cmd string) (string, error) {
 		return "", ErrRCONNotInitialized
 	}
 	req := newRCONRequest(rrtExecCmd, cmd)
-	glog.V(2).Infof("steam: sending rcon exec command request: %v", req)
+	log.Debugf("steam: sending rcon exec command request: %v", req)
 	data, _ := req.marshalBinary()
 	if err := s.tsock.send(data); err != nil {
 		return "", err
@@ -233,7 +233,7 @@ func (s *Server) Send(cmd string) (string, error) {
 	if err := resp.unmarshalBinary(data); err != nil {
 		return "", err
 	}
-	glog.V(2).Infof("steam: received response %v", resp)
+	log.Debugf("steam: received response %v", resp)
 	if resp.typ != rrtRespValue {
 		return "", ErrInvalidResponseType
 	}

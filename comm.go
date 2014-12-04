@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 
-	"github.com/golang/glog"
+	log "github.com/Sirupsen/logrus"
 )
 
 const (
@@ -205,7 +205,7 @@ func (r *InfoResponse) unmarshalBinary(data []byte) (err error) {
 	if header != hInfoResponse {
 		triggerError(errBadData)
 	}
-	glog.V(1).Info("steam: info response header detected")
+	log.Debug("steam: info response header detected")
 	r.Protocol = toInt(readByte(buf))
 	r.Name = readString(buf)
 	r.Map = readString(buf)
@@ -224,7 +224,7 @@ func (r *InfoResponse) unmarshalBinary(data []byte) (err error) {
 	if buf.Len() < 1 {
 		return nil
 	}
-	glog.V(2).Infof("steam: reading edf data (remaining bytes %v)", buf.Len())
+	log.Debugf("steam: reading edf data (remaining bytes %v)", buf.Len())
 	// EDF byte present
 	edf := readByte(buf)
 	if edf&edfPort != 0 {
@@ -282,9 +282,9 @@ func (r *playersInfoChallengeResponse) unmarshalBinary(data []byte) (err error) 
 	if header != hPlayersInfoChallengeResponse {
 		triggerError(errBadData)
 	}
-	glog.V(1).Info("steam: players info challenge response header detected")
+	log.Debug("steam: players info challenge response header detected")
 	r.Challenge = toInt(readLong(buf))
-	glog.V(2).Infof("steam: challenge number %#X", r.Challenge)
+	log.Debugf("steam: challenge number %#X", r.Challenge)
 	return nil
 }
 
@@ -303,9 +303,9 @@ func (r *PlayersInfoResponse) unmarshalBinary(data []byte) (err error) {
 	if header != hPlayersInfoResponse {
 		triggerError(errBadData)
 	}
-	glog.V(1).Info("steam: players info response header detected")
+	log.Debug("steam: players info response header detected")
 	count := toInt(readByte(buf))
-	glog.V(2).Infof("steam: received %v player info(s)", count)
+	log.Debugf("steam: received %v player info(s)", count)
 	for i := 0; i < count; i++ {
 		// Read the chunk index
 		readByte(buf)
@@ -354,7 +354,7 @@ func newRCONRequest(typ rconRequestType, body string) *rconRequest {
 }
 
 func (r *rconRequest) marshalBinary() ([]byte, error) {
-	glog.V(2).Infof("steam: rconRequest %v", r)
+	log.Debugf("steam: rconRequest %v", r)
 	var buf bytes.Buffer
 	writeLong(&buf, r.size)
 	writeLong(&buf, r.id)
@@ -388,6 +388,6 @@ func (r *rconResponse) unmarshalBinary(data []byte) (err error) {
 	r.id = readLong(buf)
 	r.typ = rconRequestType(readLong(buf))
 	r.body = string(readBytes(buf, int(r.size-8)))
-	glog.V(2).Infof("steam: rconResponse %v", r)
+	log.Debugf("steam: rconResponse %v", r)
 	return nil
 }
