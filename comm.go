@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"math/rand"
-
-	log "github.com/Sirupsen/logrus"
 )
 
 const (
@@ -152,10 +150,10 @@ type infoRequest struct {
 }
 
 func (infoRequest) marshalBinary() ([]byte, error) {
-	var buf bytes.Buffer
-	writeRequestPrefix(&buf)
-	writeByte(&buf, hInfoRequest)
-	writeString(&buf, "Source Engine Query")
+	buf := new(bytes.Buffer)
+	writeRequestPrefix(buf)
+	writeByte(buf, hInfoRequest)
+	writeString(buf, "Source Engine Query")
 	return buf.Bytes(), nil
 }
 
@@ -195,17 +193,15 @@ const (
 
 func (r *InfoResponse) unmarshalBinary(data []byte) (err error) {
 	defer func() {
-		if e := recover(); e != nil {
-			fmt.Print(err)
-			err = e.(parseError)
+		if r := recover(); r != nil {
+			err = r.(error)
 		}
 	}()
 	buf := bytes.NewBuffer(data)
 	header := readByte(buf)
 	if header != hInfoResponse {
-		triggerError(errBadData)
+		panic(errBadData)
 	}
-	log.Debug("steam: info response header detected")
 	r.Protocol = toInt(readByte(buf))
 	r.Name = readString(buf)
 	r.Map = readString(buf)
@@ -224,7 +220,6 @@ func (r *InfoResponse) unmarshalBinary(data []byte) (err error) {
 	if buf.Len() < 1 {
 		return nil
 	}
-	log.Debugf("steam: reading edf data (remaining bytes %v)", buf.Len())
 	// EDF byte present
 	edf := readByte(buf)
 	if edf&edfPort != 0 {
@@ -273,18 +268,16 @@ type playersInfoChallengeResponse struct {
 
 func (r *playersInfoChallengeResponse) unmarshalBinary(data []byte) (err error) {
 	defer func() {
-		if e := recover(); e != nil {
-			err = e.(parseError)
+		if r := recover(); r != nil {
+			err = r.(error)
 		}
 	}()
 	buf := bytes.NewBuffer(data)
 	header := readByte(buf)
 	if header != hPlayersInfoChallengeResponse {
-		triggerError(errBadData)
+		panic(errBadData)
 	}
-	log.Debug("steam: players info challenge response header detected")
 	r.Challenge = toInt(readLong(buf))
-	log.Debugf("steam: challenge number %#X", r.Challenge)
 	return nil
 }
 
@@ -294,18 +287,16 @@ type PlayersInfoResponse struct {
 
 func (r *PlayersInfoResponse) unmarshalBinary(data []byte) (err error) {
 	defer func() {
-		if e := recover(); e != nil {
-			err = e.(parseError)
+		if r := recover(); r != nil {
+			err = r.(error)
 		}
 	}()
 	buf := bytes.NewBuffer(data)
 	header := readByte(buf)
 	if header != hPlayersInfoResponse {
-		triggerError(errBadData)
+		panic(errBadData)
 	}
-	log.Debug("steam: players info response header detected")
 	count := toInt(readByte(buf))
-	log.Debugf("steam: received %v player info(s)", count)
 	for i := 0; i < count; i++ {
 		// Read the chunk index
 		readByte(buf)
@@ -354,14 +345,13 @@ func newRCONRequest(typ rconRequestType, body string) *rconRequest {
 }
 
 func (r *rconRequest) marshalBinary() ([]byte, error) {
-	log.Debugf("steam: rconRequest %v", r)
-	var buf bytes.Buffer
-	writeLong(&buf, r.size)
-	writeLong(&buf, r.id)
-	writeLong(&buf, int32(r.typ))
+	buf := new(bytes.Buffer)
+	writeLong(buf, r.size)
+	writeLong(buf, r.id)
+	writeLong(buf, int32(r.typ))
 	buf.WriteString(r.body)
-	writeNull(&buf)
-	writeNull(&buf)
+	writeNull(buf)
+	writeNull(buf)
 	return buf.Bytes(), nil
 }
 
@@ -369,25 +359,23 @@ type rconResponse struct {
 	size int32
 	id   int32
 	typ  rconRequestType
-	body string
+	body []byte
 }
 
 func (r *rconResponse) String() string {
-	return fmt.Sprintf("%v %v %v %v", r.size, r.id, r.typ, r.body)
+	return fmt.Sprintf("%v %v %v %v", r.size, r.id, r.typ, string(r.body))
 }
 
 func (r *rconResponse) unmarshalBinary(data []byte) (err error) {
 	defer func() {
-		if e := recover(); e != nil {
-			fmt.Print(err)
-			err = e.(parseError)
+		if r := recover(); r != nil {
+			err = r.(error)
 		}
 	}()
 	buf := bytes.NewBuffer(data)
 	r.size = readLong(buf)
 	r.id = readLong(buf)
 	r.typ = rconRequestType(readLong(buf))
-	r.body = string(readBytes(buf, int(r.size-8)))
-	log.Debugf("steam: rconResponse %v", r)
+	r.body = readBytes(buf, int(r.size-10))
 	return nil
 }

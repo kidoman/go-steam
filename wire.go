@@ -2,6 +2,8 @@ package steam
 
 import (
 	"bytes"
+	"encoding/binary"
+	"io"
 	"math"
 	"strconv"
 )
@@ -16,60 +18,64 @@ var errCouldNotReadData = parseError("steam: could not read data")
 var errNotEnoughDataInResponse = parseError("steam: not enough data in response")
 var errBadData = parseError("steam: bad data in response")
 
-func triggerError(err parseError) {
-	panic(err)
+func readByte(r io.Reader) byte {
+	buf := make([]byte, 1)
+	_, err := io.ReadFull(r, buf)
+	must(err)
+	return buf[0]
 }
 
-func readByte(buf *bytes.Buffer) byte {
-	b, err := buf.ReadByte()
-	if err != nil {
-		triggerError(errCouldNotReadData)
-	}
-	return b
+func readBytes(r io.Reader, n int) (buf []byte) {
+	buf = make([]byte, n)
+	_, err := io.ReadFull(r, buf)
+	must(err)
+	return
 }
 
-func readBytes(buf *bytes.Buffer, n int) []byte {
-	b := buf.Next(n)
-	if n != len(b) {
-		triggerError(errNotEnoughDataInResponse)
-	}
-	return b
+func readShort(r io.Reader) (v int16) {
+	must(binary.Read(r, binary.LittleEndian, &v))
+	return
 }
 
-func readShort(buf *bytes.Buffer) int16 {
-	var t [2]byte
-	n, err := buf.Read(t[:])
-	if err != nil {
-		triggerError(errCouldNotReadData)
-	}
-	if n != 2 {
-		triggerError(errNotEnoughDataInResponse)
-	}
-	return int16(uint16(t[0]) + uint16(t[1]<<8))
+func readLong(r io.Reader) (v int32) {
+	must(binary.Read(r, binary.LittleEndian, &v))
+	return
 }
 
-func readLong(buf *bytes.Buffer) int32 {
-	var t [4]byte
-	n, err := buf.Read(t[:])
-	if err != nil {
-		triggerError(errCouldNotReadData)
-	}
-	if n != 4 {
-		triggerError(errNotEnoughDataInResponse)
-	}
-	return int32(uint32(t[0]) + uint32(t[1])<<8 + uint32(t[2])<<16 + uint32(t[3])<<24)
+func readULong(r io.Reader) (v uint32) {
+	must(binary.Read(r, binary.LittleEndian, &v))
+	return
 }
 
-func readULong(buf *bytes.Buffer) uint32 {
-	var t [4]byte
-	n, err := buf.Read(t[:])
-	if err != nil {
-		triggerError(errCouldNotReadData)
+func readLongLong(r io.Reader) (v int64) {
+	must(binary.Read(r, binary.LittleEndian, &v))
+	return
+}
+
+func readString(r io.Reader) string {
+	if buf, ok := r.(*bytes.Buffer); ok {
+		// See if we are being passed a bytes.Buffer.
+		// Fast path.
+		bytes, err := buf.ReadBytes(0)
+		must(err)
+		return string(bytes)
 	}
-	if n != 4 {
-		triggerError(errNotEnoughDataInResponse)
+	var buf bytes.Buffer
+	for {
+		b := make([]byte, 1)
+		_, err := io.ReadFull(r, b)
+		must(err)
+		buf.WriteByte(b[0])
+		if b[0] == 0 {
+			break
+		}
 	}
-	return uint32(uint32(t[0]) + uint32(t[1])<<8 + uint32(t[2])<<16 + uint32(t[3])<<24)
+	return buf.String()
+}
+
+func readFloat(r io.Reader) float32 {
+	v := readULong(r)
+	return math.Float32frombits(v)
 }
 
 func toInt(v interface{}) int {
@@ -85,46 +91,18 @@ func toInt(v interface{}) int {
 	case string:
 		i, err := strconv.Atoi(v)
 		if err != nil {
-			triggerError(errBadData)
+			panic(errBadData)
 		}
 		return i
-	default:
-		triggerError(errBadData)
 	}
-
-	panic("unreachable")
+	panic(errBadData)
 }
-
-func readLongLong(buf *bytes.Buffer) int64 {
-	var t [8]byte
-	n, err := buf.Read(t[:])
-	if err != nil {
-		triggerError(errCouldNotReadData)
-	}
-	if n != 8 {
-		triggerError(errNotEnoughDataInResponse)
-	}
-	return int64(uint64(t[0]) + uint64(t[1])<<8 + uint64(t[2])<<16 + uint64(t[3])<<24 + uint64(t[4])<<32 + uint64(t[5])<<40 + uint64(t[6])<<48 + uint64(t[7])<<56)
-}
-
-func readString(buf *bytes.Buffer) string {
-	bytes, err := buf.ReadBytes(0)
-	if err != nil {
-		triggerError(errCouldNotReadData)
-	}
-	return string(bytes[:len(bytes)-1])
-}
-
-func readFloat(buf *bytes.Buffer) float32 {
-	v := readULong(buf)
-	return math.Float32frombits(v)
-}
-
-var requestPrefix = [4]byte{0xFF, 0xFF, 0xFF, 0xFF}
 
 func writeRequestPrefix(buf *bytes.Buffer) {
-	buf.Write(requestPrefix[:])
+	buf.Write(requestPrefix)
 }
+
+var requestPrefix = []byte{0xFF, 0xFF, 0xFF, 0xFF}
 
 func writeString(buf *bytes.Buffer, v string) {
 	buf.WriteString(v)
@@ -136,8 +114,7 @@ func writeByte(buf *bytes.Buffer, v byte) {
 }
 
 func writeLong(buf *bytes.Buffer, v int32) {
-	bytes := [4]byte{byte(v & 0xFF), byte(v >> 8 & 0xFF), byte(v >> 16 & 0xFF), byte(v >> 24 & 0xFF)}
-	buf.Write(bytes[:])
+	must(binary.Write(buf, binary.LittleEndian, v))
 }
 
 func writeNull(buf *bytes.Buffer) {
