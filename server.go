@@ -24,7 +24,7 @@ type Server struct {
 	usock          *udpSocket
 	udpInitialized bool
 
-	tsock           *tcpSocket
+	rsock           *rconSocket
 	rconInitialized bool
 
 	mu sync.Mutex
@@ -97,7 +97,7 @@ func (s *Server) initRCON() (err error) {
 	log.WithFields(logrus.Fields{
 		"addr": s.addr,
 	}).Debug("steam: connecting rcon")
-	if s.tsock, err = newTCPSocket(s.dial, s.addr); err != nil {
+	if s.rsock, err = newRCONSocket(s.dial, s.addr); err != nil {
 		log.WithFields(logrus.Fields{
 			"err": err,
 		}).Error("steam: could not open tcp socket")
@@ -105,7 +105,7 @@ func (s *Server) initRCON() (err error) {
 	}
 	defer func() {
 		if err != nil {
-			s.tsock.close()
+			s.rsock.close()
 		}
 	}()
 	if err := s.authenticate(); err != nil {
@@ -124,11 +124,11 @@ func (s *Server) authenticate() error {
 	}).Debug("steam: authenticating")
 	req := newRCONRequest(rrtAuth, s.rconPassword)
 	data, _ := req.marshalBinary()
-	if err := s.tsock.send(data); err != nil {
+	if err := s.rsock.send(data); err != nil {
 		return err
 	}
 	// Receive the empty response value
-	data, err := s.tsock.receive()
+	data, err := s.rsock.receive()
 	if err != nil {
 		return err
 	}
@@ -146,7 +146,7 @@ func (s *Server) authenticate() error {
 		return ErrInvalidResponseType
 	}
 	// Receive the actual auth response
-	data, err = s.tsock.receive()
+	data, err = s.rsock.receive()
 	if err != nil {
 		return err
 	}
@@ -163,7 +163,7 @@ func (s *Server) authenticate() error {
 // Close releases the resources associated with this server.
 func (s *Server) Close() {
 	if s.rconInitialized {
-		s.tsock.close()
+		s.rsock.close()
 	}
 	s.usock.close()
 }
@@ -257,7 +257,7 @@ func (s *Server) Send(cmd string) (string, error) {
 	}
 	req := newRCONRequest(rrtExecCmd, cmd)
 	data, _ := req.marshalBinary()
-	if err := s.tsock.send(data); err != nil {
+	if err := s.rsock.send(data); err != nil {
 		log.WithFields(logrus.Fields{
 			"err": err,
 		}).Error("steam: sending rcon request")
@@ -266,7 +266,7 @@ func (s *Server) Send(cmd string) (string, error) {
 	// Send the mirror packet.
 	reqMirror := newRCONRequest(rrtRespValue, "")
 	data, _ = reqMirror.marshalBinary()
-	if err := s.tsock.send(data); err != nil {
+	if err := s.rsock.send(data); err != nil {
 		log.WithFields(logrus.Fields{
 			"err": err,
 		}).Error("steam: sending rcon mirror request")
@@ -278,7 +278,7 @@ func (s *Server) Send(cmd string) (string, error) {
 	)
 	// Start receiving data.
 	for {
-		data, err := s.tsock.receive()
+		data, err := s.rsock.receive()
 		if err != nil {
 			log.WithFields(logrus.Fields{
 				"err": err,

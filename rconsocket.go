@@ -9,23 +9,23 @@ import (
 	"github.com/Sirupsen/logrus"
 )
 
-type tcpSocket struct {
+type rconSocket struct {
 	conn net.Conn
 }
 
-func newTCPSocket(dial DialFn, addr string) (*tcpSocket, error) {
+func newRCONSocket(dial DialFn, addr string) (*rconSocket, error) {
 	conn, err := dial("tcp", addr)
 	if err != nil {
 		return nil, err
 	}
-	return &tcpSocket{conn}, nil
+	return &rconSocket{conn}, nil
 }
 
-func (s *tcpSocket) close() {
+func (s *rconSocket) close() {
 	s.conn.Close()
 }
 
-func (s *tcpSocket) send(p []byte) error {
+func (s *rconSocket) send(p []byte) error {
 	if err := s.conn.SetWriteDeadline(time.Now().Add(400 * time.Millisecond)); err != nil {
 		return err
 	}
@@ -36,7 +36,7 @@ func (s *tcpSocket) send(p []byte) error {
 	return nil
 }
 
-func (s *tcpSocket) receive() (_ []byte, err error) {
+func (s *rconSocket) receive() (_ []byte, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = r.(error)
