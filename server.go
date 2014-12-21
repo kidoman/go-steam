@@ -257,21 +257,35 @@ func (s *Server) Send(cmd string) (string, error) {
 	}
 	req := newRCONRequest(rrtExecCmd, cmd)
 	data, _ := req.marshalBinary()
+	log.WithFields(logrus.Fields{
+		"addr": s.addr,
+		"data": data,
+	}).Debug("steam: sending rcon request")
 	if err := s.rsock.send(data); err != nil {
 		log.WithFields(logrus.Fields{
 			"err": err,
 		}).Error("steam: sending rcon request")
 		return "", err
 	}
+	log.WithFields(logrus.Fields{
+		"addr": s.addr,
+	}).Debug("steam: sent rcon request")
 	// Send the mirror packet.
 	reqMirror := newRCONRequest(rrtRespValue, "")
 	data, _ = reqMirror.marshalBinary()
+	log.WithFields(logrus.Fields{
+		"addr": s.addr,
+		"data": data,
+	}).Debug("steam: sending rcon mirror request")
 	if err := s.rsock.send(data); err != nil {
 		log.WithFields(logrus.Fields{
 			"err": err,
 		}).Error("steam: sending rcon mirror request")
 		return "", err
 	}
+	log.WithFields(logrus.Fields{
+		"addr": s.addr,
+	}).Debug("steam: sent rcon mirror request")
 	var (
 		buf       bytes.Buffer
 		sawMirror bool
@@ -285,6 +299,10 @@ func (s *Server) Send(cmd string) (string, error) {
 			}).Error("steam: receiving rcon response")
 			return "", err
 		}
+		log.WithFields(logrus.Fields{
+			"addr": s.addr,
+			"data": data,
+		}).Debug("steam: received rcon response")
 		var resp rconResponse
 		if err := resp.unmarshalBinary(data); err != nil {
 			log.WithFields(logrus.Fields{

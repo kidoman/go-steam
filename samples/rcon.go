@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
+	logrus "github.com/Sirupsen/logrus"
 	"github.com/kidoman/go-steam"
 )
 
@@ -14,7 +14,9 @@ func main() {
 	debug := flag.Bool("debug", false, "debug")
 	flag.Parse()
 	if *debug {
-		steam.SetLog(log.New())
+		log := logrus.New()
+		log.Level = logrus.DebugLevel
+		steam.SetLog(log)
 	}
 	addr := os.Getenv("ADDR")
 	pass := os.Getenv("RCON_PASSWORD")
