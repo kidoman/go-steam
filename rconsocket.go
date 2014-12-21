@@ -47,6 +47,9 @@ func (s *rconSocket) receive() (_ []byte, err error) {
 	}()
 	buf := new(bytes.Buffer)
 	tr := io.TeeReader(s.conn, buf)
+	if err := s.conn.SetReadDeadline(time.Now().Add(400 * time.Millisecond)); err != nil {
+		return nil, err
+	}
 	total := int(readLong(tr))
 	log.WithFields(logrus.Fields{
 		"total": total + 4,
