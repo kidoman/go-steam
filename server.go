@@ -52,7 +52,7 @@ func Connect(addr string, os ...*ConnectOptions) (_ *Server, err error) {
 	}
 	if s.dial == nil {
 		s.dial = (&net.Dialer{
-			Timeout: 5 * time.Second,
+			Timeout: 1 * time.Second,
 		}).Dial
 	}
 	if err := s.init(); err != nil {

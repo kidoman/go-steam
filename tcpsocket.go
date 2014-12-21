@@ -26,7 +26,7 @@ func (s *tcpSocket) close() {
 }
 
 func (s *tcpSocket) send(p []byte) error {
-	if err := s.conn.SetWriteDeadline(time.Now().Add(5 * time.Second)); err != nil {
+	if err := s.conn.SetWriteDeadline(time.Now().Add(400 * time.Millisecond)); err != nil {
 		return err
 	}
 	_, err := s.conn.Write(p)
@@ -42,9 +42,6 @@ func (s *tcpSocket) receive() (_ []byte, err error) {
 			err = r.(error)
 		}
 	}()
-	if err := s.conn.SetReadDeadline(time.Now().Add(5 * time.Second)); err != nil {
-		return nil, err
-	}
 	buf := new(bytes.Buffer)
 	tr := io.TeeReader(s.conn, buf)
 	total := int(readLong(tr))
@@ -56,6 +53,9 @@ func (s *tcpSocket) receive() (_ []byte, err error) {
 			"bytes": total,
 		}).Debug("steam: reading")
 		b := make([]byte, total)
+		if err := s.conn.SetReadDeadline(time.Now().Add(400 * time.Millisecond)); err != nil {
+			return nil, err
+		}
 		n, err := s.conn.Read(b)
 		if n > 0 {
 			log.WithFields(logrus.Fields{
