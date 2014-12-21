@@ -14,7 +14,7 @@ func main() {
 	debug := flag.Bool("debug", false, "debug")
 	flag.Parse()
 	if *debug {
-		log.SetLevel(log.DebugLevel)
+		steam.SetLog(log.New())
 	}
 	addr := os.Getenv("ADDR")
 	pass := os.Getenv("RCON_PASSWORD")

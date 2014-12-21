@@ -258,6 +258,9 @@ func (s *Server) Send(cmd string) (string, error) {
 	req := newRCONRequest(rrtExecCmd, cmd)
 	data, _ := req.marshalBinary()
 	if err := s.tsock.send(data); err != nil {
+		log.WithFields(logrus.Fields{
+			"err": err,
+		}).Error("steam: sending rcon request")
 		return "", err
 	}
 	// Send the mirror packet.
@@ -266,7 +269,7 @@ func (s *Server) Send(cmd string) (string, error) {
 	if err := s.tsock.send(data); err != nil {
 		log.WithFields(logrus.Fields{
 			"err": err,
-		}).Error("steam: sending rcon request")
+		}).Error("steam: sending rcon mirror request")
 		return "", err
 	}
 	var (
