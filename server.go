@@ -45,30 +45,37 @@ func Connect(addr string, os ...*ConnectOptions) (_ *Server, err error) {
 	s := &Server{
 		addr: addr,
 	}
+
 	if len(os) > 0 {
 		o := os[0]
 		s.dial = o.Dial
 		s.rconPassword = o.RCONPassword
 	}
+
 	if s.dial == nil {
 		s.dial = (&net.Dialer{
 			Timeout: 1 * time.Second,
 		}).Dial
 	}
+
 	if err := s.init(); err != nil {
 		return nil, err
 	}
-	if s.rconPassword == "" {
-		return s, nil
-	}
+
 	defer func() {
 		if err != nil {
 			s.usock.close()
 		}
 	}()
+
+	if s.rconPassword == "" {
+		return s, nil
+	}
+
 	if err := s.initRCON(); err != nil {
 		return nil, err
 	}
+
 	return s, nil
 }
 
@@ -80,13 +87,16 @@ func (s *Server) init() error {
 	if s.addr == "" {
 		return errors.New("steam: server needs a address")
 	}
+
 	var err error
 	if s.usock, err = newUDPSocket(s.dial, s.addr); err != nil {
 		log.WithFields(logrus.Fields{
 			"err": err,
 		}).Error("steam: could not open udp socket")
+
 		return err
 	}
+
 	return nil
 }
 
@@ -94,27 +104,35 @@ func (s *Server) initRCON() (err error) {
 	if s.addr == "" {
 		return errors.New("steam: server needs a address")
 	}
+
 	log.WithFields(logrus.Fields{
 		"addr": s.addr,
 	}).Debug("steam: connecting rcon")
+
 	if s.rsock, err = newRCONSocket(s.dial, s.addr); err != nil {
 		log.WithFields(logrus.Fields{
 			"err": err,
 		}).Error("steam: could not open tcp socket")
+
 		return err
 	}
+
 	defer func() {
 		if err != nil {
 			s.rsock.close()
 		}
 	}()
+
 	if err := s.authenticate(); err != nil {
 		log.WithFields(logrus.Fields{
 			"err": err,
 		}).Error("steam: could not authenticate")
+
 		return err
 	}
+
 	s.rconInitialized = true
+
 	return nil
 }
 
@@ -122,41 +140,50 @@ func (s *Server) authenticate() error {
 	log.WithFields(logrus.Fields{
 		"addr": s.addr,
 	}).Debug("steam: authenticating")
+
 	req := newRCONRequest(rrtAuth, s.rconPassword)
 	data, _ := req.marshalBinary()
 	if err := s.rsock.send(data); err != nil {
 		return err
 	}
 	// Receive the empty response value
+
 	data, err := s.rsock.receive()
 	if err != nil {
 		return err
 	}
+
 	log.WithFields(logrus.Fields{
 		"data": data,
 	}).Debug("steam: received empty response")
+
 	var resp rconResponse
 	if err := resp.unmarshalBinary(data); err != nil {
 		return err
 	}
+
 	if resp.typ != rrtRespValue || resp.id != req.id {
 		return ErrInvalidResponseID
 	}
 	if resp.id != req.id {
 		return ErrInvalidResponseType
 	}
+
 	// Receive the actual auth response
 	data, err = s.rsock.receive()
 	if err != nil {
 		return err
 	}
+
 	if err := resp.unmarshalBinary(data); err != nil {
 		return err
 	}
 	if resp.typ != rrtAuthResp || resp.id != req.id {
 		return ErrRCONAuthFailed
 	}
+
 	log.Debug("steam: authenticated")
+
 	return nil
 }
 
@@ -172,13 +199,17 @@ func (s *Server) Close() {
 func (s *Server) Ping() (time.Duration, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	req, _ := infoRequest{}.marshalBinary()
+
 	start := time.Now()
+
+	req, _ := infoRequest{}.marshalBinary()
 	s.usock.send(req)
 	if _, err := s.usock.receive(); err != nil {
 		return 0, err
 	}
+
 	elapsed := time.Since(start)
+
 	return elapsed, nil
 }
 
@@ -186,28 +217,36 @@ func (s *Server) Ping() (time.Duration, error) {
 func (s *Server) Info() (*InfoResponse, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
 	req, _ := infoRequest{}.marshalBinary()
 	if err := s.usock.send(req); err != nil {
 		return nil, err
 	}
+
 	log.Debug("receiving info response")
+
 	data, err := s.usock.receive()
 	if err != nil {
 		log.WithFields(logrus.Fields{
 			"err": err,
 		}).Error("could not receive info response")
+
 		return nil, err
 	}
+
 	log.WithFields(logrus.Fields{
 		"data": data,
 	}).Debug("received info response")
+
 	var res InfoResponse
 	if err := res.unmarshalBinary(data); err != nil {
 		log.WithFields(logrus.Fields{
 			"err": err,
 		}).Error("could not unmarshal info response")
+
 		return nil, err
 	}
+
 	return &res, nil
 }
 
@@ -215,36 +254,43 @@ func (s *Server) Info() (*InfoResponse, error) {
 func (s *Server) PlayersInfo() (*PlayersInfoResponse, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
 	// Send the challenge request
 	req, _ := playersInfoRequest{}.marshalBinary()
 	if err := s.usock.send(req); err != nil {
 		return nil, err
 	}
+
 	data, err := s.usock.receive()
 	if err != nil {
 		return nil, err
 	}
+
 	if isPlayersInfoChallengeResponse(data) {
 		// Parse the challenge response
 		var challangeRes playersInfoChallengeResponse
 		if err := challangeRes.unmarshalBinary(data); err != nil {
 			return nil, err
 		}
+
 		// Send a new request with the proper challenge number
 		req, _ = playersInfoRequest{challangeRes.Challenge}.marshalBinary()
 		if err := s.usock.send(req); err != nil {
 			return nil, err
 		}
+
 		data, err = s.usock.receive()
 		if err != nil {
 			return nil, err
 		}
 	}
+
 	// Parse the return value
 	var res PlayersInfoResponse
 	if err := res.unmarshalBinary(data); err != nil {
 		return nil, err
 	}
+
 	return &res, nil
 }
 
@@ -252,44 +298,57 @@ func (s *Server) PlayersInfo() (*PlayersInfoResponse, error) {
 func (s *Server) Send(cmd string) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
 	if !s.rconInitialized {
 		return "", ErrRCONNotInitialized
 	}
+
 	req := newRCONRequest(rrtExecCmd, cmd)
 	data, _ := req.marshalBinary()
+
 	log.WithFields(logrus.Fields{
 		"addr": s.addr,
 		"data": data,
 	}).Debug("steam: sending rcon request")
+
 	if err := s.rsock.send(data); err != nil {
 		log.WithFields(logrus.Fields{
 			"err": err,
 		}).Error("steam: sending rcon request")
+
 		return "", err
 	}
+
 	log.WithFields(logrus.Fields{
 		"addr": s.addr,
 	}).Debug("steam: sent rcon request")
+
 	// Send the mirror packet.
 	reqMirror := newRCONRequest(rrtRespValue, "")
 	data, _ = reqMirror.marshalBinary()
+
 	log.WithFields(logrus.Fields{
 		"addr": s.addr,
 		"data": data,
 	}).Debug("steam: sending rcon mirror request")
+
 	if err := s.rsock.send(data); err != nil {
 		log.WithFields(logrus.Fields{
 			"err": err,
 		}).Error("steam: sending rcon mirror request")
+
 		return "", err
 	}
+
 	log.WithFields(logrus.Fields{
 		"addr": s.addr,
 	}).Debug("steam: sent rcon mirror request")
+
 	var (
 		buf       bytes.Buffer
 		sawMirror bool
 	)
+
 	// Start receiving data.
 	for {
 		data, err := s.rsock.receive()
@@ -297,22 +356,28 @@ func (s *Server) Send(cmd string) (string, error) {
 			log.WithFields(logrus.Fields{
 				"err": err,
 			}).Error("steam: receiving rcon response")
+
 			return "", err
 		}
+
 		log.WithFields(logrus.Fields{
 			"addr": s.addr,
 			"data": data,
 		}).Debug("steam: received rcon response")
+
 		var resp rconResponse
 		if err := resp.unmarshalBinary(data); err != nil {
 			log.WithFields(logrus.Fields{
 				"err": err,
 			}).Error("steam: decoding response")
+
 			return "", err
 		}
+
 		if resp.typ != rrtRespValue {
 			return "", ErrInvalidResponseType
 		}
+
 		if !sawMirror && resp.id == reqMirror.id {
 			sawMirror = true
 			continue
@@ -323,14 +388,17 @@ func (s *Server) Send(cmd string) (string, error) {
 			}
 			return "", ErrInvalidResponseTrailer
 		}
+
 		if req.id != resp.id {
 			return "", ErrInvalidResponseID
 		}
+
 		_, err = buf.Write(resp.body)
 		if err != nil {
 			return "", err
 		}
 	}
+
 	return buf.String(), nil
 }
 
