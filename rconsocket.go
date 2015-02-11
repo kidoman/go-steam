@@ -27,7 +27,7 @@ func (s *rconSocket) close() {
 }
 
 func (s *rconSocket) send(p []byte) error {
-	if err := s.conn.SetWriteDeadline(time.Now().Add(400 * time.Millisecond)); err != nil {
+	if err := s.conn.SetWriteDeadline(time.Now().Add(5 * time.Second)); err != nil {
 		return err
 	}
 
