@@ -18,6 +18,7 @@ func newRCONSocket(dial DialFn, addr string) (*rconSocket, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &rconSocket{conn}, nil
 }
 
@@ -29,13 +30,16 @@ func (s *rconSocket) send(p []byte) error {
 	if err := s.conn.SetWriteDeadline(time.Now().Add(400 * time.Millisecond)); err != nil {
 		return err
 	}
+
 	_, err := s.conn.Write(p)
 	if err != nil {
 		log.WithFields(logrus.Fields{
 			"err": err,
 		}).Error("steam: could not write rcon request")
+
 		return err
 	}
+
 	return nil
 }
 
