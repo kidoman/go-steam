@@ -45,19 +45,25 @@ func (s *rconSocket) receive() (_ []byte, err error) {
 			err = r.(error)
 		}
 	}()
-	buf := new(bytes.Buffer)
-	tr := io.TeeReader(s.conn, buf)
+
+	var buf bytes.Buffer
+
+	tr := io.TeeReader(s.conn, &buf)
+
 	if err := s.conn.SetReadDeadline(time.Now().Add(400 * time.Millisecond)); err != nil {
 		return nil, err
 	}
+
 	total := int(readLong(tr))
 	log.WithFields(logrus.Fields{
 		"total": total + 4,
 	}).Debug("steam: reading rcon packet")
+
 	for total > 0 {
 		log.WithFields(logrus.Fields{
 			"bytes": total,
 		}).Debug("steam: reading rcon response")
+
 		b := make([]byte, total)
 		if err := s.conn.SetReadDeadline(time.Now().Add(400 * time.Millisecond)); err != nil {
 			return nil, err
@@ -67,26 +73,32 @@ func (s *rconSocket) receive() (_ []byte, err error) {
 			log.WithFields(logrus.Fields{
 				"bytes": n,
 			}).Debug("steam: read rcon response")
+
 			_, err := buf.Write(b)
 			if err != nil {
 				return nil, err
 			}
+
 			total -= n
 		}
 		if err != nil {
 			log.WithFields(logrus.Fields{
 				"err": err,
 			}).Error("steam: could not receive data")
+
 			if err == io.EOF {
 				return nil, err
 			}
 		}
+
 		log.WithFields(logrus.Fields{
 			"bytes": total,
 		}).Debug("steam: remaining rcon response")
 	}
+
 	log.WithFields(logrus.Fields{
 		"size": buf.Len(),
 	}).Debug("steam: read rcon packet")
+
 	return buf.Bytes(), nil
 }
