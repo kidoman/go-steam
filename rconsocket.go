@@ -46,13 +46,12 @@ func (s *rconSocket) receive() (_ []byte, err error) {
 		}
 	}()
 
-	var buf bytes.Buffer
-
-	tr := io.TeeReader(s.conn, &buf)
-
-	if err := s.conn.SetReadDeadline(time.Now().Add(400 * time.Millisecond)); err != nil {
+	if err := s.conn.SetReadDeadline(time.Now().Add(5 * time.Second)); err != nil {
 		return nil, err
 	}
+
+	var buf bytes.Buffer
+	tr := io.TeeReader(s.conn, &buf)
 
 	total := int(readLong(tr))
 	log.WithFields(logrus.Fields{
@@ -65,9 +64,6 @@ func (s *rconSocket) receive() (_ []byte, err error) {
 		}).Debug("steam: reading rcon response")
 
 		b := make([]byte, total)
-		if err := s.conn.SetReadDeadline(time.Now().Add(400 * time.Millisecond)); err != nil {
-			return nil, err
-		}
 		n, err := s.conn.Read(b)
 		if n > 0 {
 			log.WithFields(logrus.Fields{
