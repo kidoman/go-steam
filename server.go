@@ -308,12 +308,13 @@ func (s *Server) Send(cmd string) (string, error) {
 
 	log.WithFields(logrus.Fields{
 		"addr": s.addr,
-		"data": data,
+		"id":   req.id,
 	}).Debug("steam: sending rcon request")
 
 	if err := s.rsock.send(data); err != nil {
 		log.WithFields(logrus.Fields{
-			"err": err,
+			"addr": s.addr,
+			"err":  err,
 		}).Error("steam: sending rcon request")
 
 		return "", err
@@ -321,6 +322,7 @@ func (s *Server) Send(cmd string) (string, error) {
 
 	log.WithFields(logrus.Fields{
 		"addr": s.addr,
+		"id":   req.id,
 	}).Debug("steam: sent rcon request")
 
 	// Send the mirror packet.
@@ -329,12 +331,13 @@ func (s *Server) Send(cmd string) (string, error) {
 
 	log.WithFields(logrus.Fields{
 		"addr": s.addr,
-		"data": data,
+		"id":   reqMirror.id,
 	}).Debug("steam: sending rcon mirror request")
 
 	if err := s.rsock.send(data); err != nil {
 		log.WithFields(logrus.Fields{
-			"err": err,
+			"addr": s.addr,
+			"err":  err,
 		}).Error("steam: sending rcon mirror request")
 
 		return "", err
@@ -342,6 +345,7 @@ func (s *Server) Send(cmd string) (string, error) {
 
 	log.WithFields(logrus.Fields{
 		"addr": s.addr,
+		"id":   reqMirror.id,
 	}).Debug("steam: sent rcon mirror request")
 
 	var (
@@ -354,7 +358,8 @@ func (s *Server) Send(cmd string) (string, error) {
 		data, err := s.rsock.receive()
 		if err != nil {
 			log.WithFields(logrus.Fields{
-				"err": err,
+				"addr": s.addr,
+				"err":  err,
 			}).Error("steam: receiving rcon response")
 
 			return "", err
@@ -362,39 +367,66 @@ func (s *Server) Send(cmd string) (string, error) {
 
 		log.WithFields(logrus.Fields{
 			"addr": s.addr,
-			"data": data,
 		}).Debug("steam: received rcon response")
 
 		var resp rconResponse
 		if err := resp.unmarshalBinary(data); err != nil {
 			log.WithFields(logrus.Fields{
-				"err": err,
+				"addr": s.addr,
+				"err":  err,
 			}).Error("steam: decoding response")
 
 			return "", err
 		}
 
 		if resp.typ != rrtRespValue {
+			log.WithFields(logrus.Fields{
+				"addr": s.addr,
+				"want": rrtRespValue,
+				"got":  resp.typ,
+			}).Error("steam: received rcon response with invalid response type")
+
 			return "", ErrInvalidResponseType
 		}
 
 		if !sawMirror && resp.id == reqMirror.id {
 			sawMirror = true
+
+			log.WithFields(logrus.Fields{
+				"addr": s.addr,
+				"id":   resp.id,
+			}).Debug("steam: received mirror request")
+
 			continue
 		}
 		if sawMirror {
 			if bytes.Compare(resp.body, trailer) == 0 {
+				log.WithFields(logrus.Fields{
+					"addr": s.addr,
+				}).Debug("steam: received mirror trailer")
+
 				break
 			}
 			return "", ErrInvalidResponseTrailer
 		}
 
-		if req.id != resp.id {
+		if resp.id != req.id {
+			log.WithFields(logrus.Fields{
+				"addr": s.addr,
+				"want": req.id,
+				"got":  resp.id,
+			}).Error("steam: invalid response")
+
 			return "", ErrInvalidResponseID
 		}
 
 		_, err = buf.Write(resp.body)
 		if err != nil {
+			log.WithFields(logrus.Fields{
+				"addr": s.addr,
+				"err":  err,
+			}).Error("steam: could not write to buffer")
+
 			return "", err
 		}
 	}
