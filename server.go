@@ -18,21 +18,6 @@ import (
 // connections and requires the usage of a custom dialer.
 type DialFn func(network, address string) (net.Conn, error)
 
-// Server represents a Source engine game server.
-type Server struct {
-	addr string
-
-	opts connectOptions
-
-	usock          *udpSocket
-	udpInitialized bool
-
-	rsock           *rconSocket
-	rconInitialized bool
-
-	mu sync.Mutex
-}
-
 type connectOptions struct {
 	dialFn       DialFn
 	rconPassword string
@@ -55,6 +40,21 @@ func WithRCONPassword(password string) ConnectOption {
 	return func(o *connectOptions) {
 		o.rconPassword = password
 	}
+}
+
+// Server represents a Source engine game server.
+type Server struct {
+	addr string
+
+	opts connectOptions
+
+	usock          *udpSocket
+	udpInitialized bool
+
+	rsock           *rconSocket
+	rconInitialized bool
+
+	mu sync.Mutex
 }
 
 // Connect to the source server.
