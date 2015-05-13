@@ -59,7 +59,7 @@ func WithRCONPassword(password string) ConnectOption {
 
 // Connect to the source server.
 func Connect(addr string, opts ...ConnectOption) (_ *Server, err error) {
-	s := &Server{
+	s := Server{
 		addr: addr,
 	}
 
@@ -84,14 +84,14 @@ func Connect(addr string, opts ...ConnectOption) (_ *Server, err error) {
 	}()
 
 	if s.opts.rconPassword == "" {
-		return s, nil
+		return &s, nil
 	}
 
 	if err := s.initRCON(); err != nil {
 		return nil, err
 	}
 
-	return s, nil
+	return &s, nil
 }
 
 func (s *Server) String() string {
