@@ -32,8 +32,7 @@ func main() {
 	}
 
 	for {
-		o := &steam.ConnectOptions{RCONPassword: pass}
-		rcon, err := steam.Connect(addr, o)
+		rcon, err := steam.Connect(addr, steam.WithRCONPassword(pass))
 		if err != nil {
 			fmt.Println(err)
 			time.Sleep(1 * time.Second)

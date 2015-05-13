@@ -50,10 +50,7 @@ var rconCommand = cli.Command{
 		}
 		fmt.Println()
 
-		o := &steam.ConnectOptions{
-			RCONPassword: string(password),
-		}
-		server, err := steam.Connect(addr, o)
+		server, err := steam.Connect(addr, steam.WithRCONPassword(string(password)))
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "could not connect to server %v: %v\n", addr, err)
 			os.Exit(1)

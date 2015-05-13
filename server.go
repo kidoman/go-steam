@@ -17,9 +17,7 @@ type DialFn func(network, address string) (net.Conn, error)
 type Server struct {
 	addr string
 
-	dial DialFn
-
-	rconPassword string
+	opts connectOptions
 
 	usock          *udpSocket
 	udpInitialized bool
@@ -30,30 +28,41 @@ type Server struct {
 	mu sync.Mutex
 }
 
-// ConnectOptions describes the various connections options.
-type ConnectOptions struct {
-	// Default will use net.Dialer.Dial. You can override the same by
-	// providing your own.
-	Dial DialFn
+type connectOptions struct {
+	dialFn       DialFn
+	rconPassword string
+}
 
-	// RCON password.
-	RCONPassword string
+type ConnectOption func(*connectOptions)
+
+// WithDialFn returns a ConnectOption which sets a dialFn for establishing
+// connection to the server.
+func WithDialFn(fn DialFn) ConnectOption {
+	return func(o *connectOptions) {
+		o.dialFn = fn
+	}
+}
+
+// WithRCONPassword returns a ConnectOption which sets a rcon password for
+// authenticating the connection to the server.
+func WithRCONPassword(password string) ConnectOption {
+	return func(o *connectOptions) {
+		o.rconPassword = password
+	}
 }
 
 // Connect to the source server.
-func Connect(addr string, os ...*ConnectOptions) (_ *Server, err error) {
+func Connect(addr string, opts ...ConnectOption) (_ *Server, err error) {
 	s := &Server{
 		addr: addr,
 	}
 
-	if len(os) > 0 {
-		o := os[0]
-		s.dial = o.Dial
-		s.rconPassword = o.RCONPassword
+	for _, opt := range opts {
+		opt(&s.opts)
 	}
 
-	if s.dial == nil {
-		s.dial = (&net.Dialer{
+	if s.opts.dialFn == nil {
+		s.opts.dialFn = (&net.Dialer{
 			Timeout: 1 * time.Second,
 		}).Dial
 	}
@@ -68,7 +77,7 @@ func Connect(addr string, os ...*ConnectOptions) (_ *Server, err error) {
 		}
 	}()
 
-	if s.rconPassword == "" {
+	if s.opts.rconPassword == "" {
 		return s, nil
 	}
 
@@ -89,7 +98,7 @@ func (s *Server) init() error {
 	}
 
 	var err error
-	if s.usock, err = newUDPSocket(s.dial, s.addr); err != nil {
+	if s.usock, err = newUDPSocket(s.opts.dialFn, s.addr); err != nil {
 		log.WithFields(logrus.Fields{
 			"err": err,
 		}).Error("steam: could not open udp socket")
@@ -109,7 +118,7 @@ func (s *Server) initRCON() (err error) {
 		"addr": s.addr,
 	}).Debug("steam: connecting rcon")
 
-	if s.rsock, err = newRCONSocket(s.dial, s.addr); err != nil {
+	if s.rsock, err = newRCONSocket(s.opts.dialFn, s.addr); err != nil {
 		log.WithFields(logrus.Fields{
 			"err": err,
 		}).Error("steam: could not open tcp socket")
@@ -141,7 +150,7 @@ func (s *Server) authenticate() error {
 		"addr": s.addr,
 	}).Debug("steam: authenticating")
 
-	req := newRCONRequest(rrtAuth, s.rconPassword)
+	req := newRCONRequest(rrtAuth, s.opts.rconPassword)
 	data, _ := req.marshalBinary()
 	if err := s.rsock.send(data); err != nil {
 		return err
