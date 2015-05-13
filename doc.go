@@ -1,4 +1,2 @@
-/*
-	Package steam allows querying of Source servers.
-*/
+// Package steam allows querying of Source servers.
 package steam

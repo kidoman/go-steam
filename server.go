@@ -11,6 +11,11 @@ import (
 	logrus "github.com/Sirupsen/logrus"
 )
 
+// The DialFn type is an adapter to allow the use of
+// a custom network dialing mechanism when required.
+// For example, this will come useful inside a environment
+// like AppEngine which does not permit direct socket
+// connections and requires the usage of a custom dialer.
 type DialFn func(network, address string) (net.Conn, error)
 
 // Server represents a Source engine game server.
@@ -33,6 +38,7 @@ type connectOptions struct {
 	rconPassword string
 }
 
+// ConnectOption configures how we set up the connection.
 type ConnectOption func(*connectOptions)
 
 // WithDialFn returns a ConnectOption which sets a dialFn for establishing
@@ -443,9 +449,10 @@ func (s *Server) Send(cmd string) (string, error) {
 	return buf.String(), nil
 }
 
-var (
-	trailer = []byte{0x00, 0x01, 0x00, 0x00}
+var trailer = []byte{0x00, 0x01, 0x00, 0x00}
 
+// Errors introduced by the steam client.
+var (
 	ErrRCONAuthFailed = errors.New("steam: authentication failed")
 
 	ErrRCONNotInitialized     = errors.New("steam: rcon is not initialized")
@@ -456,6 +463,7 @@ var (
 
 var log *logrus.Logger
 
+// SetLog overrides the logger used by the steam client.
 func SetLog(l *logrus.Logger) {
 	log = l
 }

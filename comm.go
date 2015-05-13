@@ -14,6 +14,7 @@ const (
 	hPlayersInfoResponse          = 'D'
 )
 
+// ServerType indicates the type of the server.
 type ServerType int
 
 func (st *ServerType) unmarshalBinary(data []byte) error {
@@ -35,9 +36,14 @@ func (st ServerType) String() string {
 }
 
 const (
+	// STInvalid describes a invalid server type.
 	STInvalid ServerType = iota
+
+	// STDedicated indicates a dedicated server type.
 	STDedicated
+	// STNonDedicated indicates a non dedicated server type.
 	STNonDedicated
+	// STProxy indicates a proxy server type.
 	STProxy
 )
 
@@ -48,6 +54,7 @@ var serverTypeStrings = map[ServerType]string{
 	STProxy:        "Proxy",
 }
 
+// Environment indicates the server's host environment.
 type Environment int
 
 func (e *Environment) unmarshalBinary(data []byte) error {
@@ -71,9 +78,14 @@ func (e Environment) String() string {
 }
 
 const (
+	// EInvalid indicates a invalid host environment.
 	EInvalid Environment = iota
+
+	// ELinux indicates that the server is hosted on Linux.
 	ELinux
+	// EWindows indicates that the server is hosted on Windows.
 	EWindows
+	// EMac indicates that the server is hosted on Mac OS X.
 	EMac
 )
 
@@ -84,6 +96,7 @@ var environmentStrings = map[Environment]string{
 	EMac:     "Mac",
 }
 
+// Visibility indicates the visibility of the server.
 type Visibility int
 
 func (v *Visibility) unmarshalBinary(data []byte) error {
@@ -104,8 +117,12 @@ func (v Visibility) String() string {
 }
 
 const (
+	// VInvalid indicates a invalid visibility.
 	VInvalid Visibility = iota
+
+	// VPublic indicates a publicly visibly server.
 	VPublic
+	// VPrivate indicates a private server.
 	VPrivate
 )
 
@@ -115,6 +132,7 @@ var visibilityStrings = map[Visibility]string{
 	VPrivate: "Private",
 }
 
+// VAC indicates the status of the Valve Anti Cheat system.
 type VAC int
 
 func (v *VAC) unmarshalBinary(data []byte) error {
@@ -135,8 +153,12 @@ func (v VAC) String() string {
 }
 
 const (
+	// VACInvalid indicates a invalid VAC configuration.
 	VACInvalid VAC = iota
+
+	// VACUnsecured indicates a insecure server (VAC disabled).
 	VACUnsecured
+	// VACSecure indicates a secure server (VAC enabled).
 	VACSecure
 )
 
@@ -157,6 +179,7 @@ func (infoRequest) marshalBinary() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// InfoResponse represents a response to a info query.
 type InfoResponse struct {
 	Protocol    int
 	Name        string
@@ -281,6 +304,7 @@ func (r *playersInfoChallengeResponse) unmarshalBinary(data []byte) (err error) 
 	return nil
 }
 
+// PlayersInfoResponse represents a response to a player info query.
 type PlayersInfoResponse struct {
 	Players []*Player
 }
@@ -309,6 +333,7 @@ func (r *PlayersInfoResponse) unmarshalBinary(data []byte) (err error) {
 	return nil
 }
 
+// Player represents a player entity in the server.
 type Player struct {
 	Name     string
 	Score    int
