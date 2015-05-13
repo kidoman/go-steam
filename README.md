@@ -9,7 +9,7 @@
 ## Installation
 
 ```
-go get github.com/sostronk/go-steam
+go get -u github.com/sostronk/go-steam
 ```
 
 To use the build in `steam` utility, install it using:
