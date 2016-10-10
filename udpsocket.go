@@ -16,6 +16,7 @@ func newUDPSocket(dial DialFn, addr string) (*udpSocket, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &udpSocket{conn}, nil
 }
 

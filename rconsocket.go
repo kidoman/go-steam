@@ -33,10 +33,6 @@ func (s *rconSocket) send(p []byte) error {
 
 	_, err := s.conn.Write(p)
 	if err != nil {
-		log.WithFields(logrus.Fields{
-			"err": err,
-		}).Error("steam: could not write rcon request")
-
 		return err
 	}
 
@@ -74,21 +70,14 @@ func (s *rconSocket) receive() (_ []byte, err error) {
 				"bytes": n,
 			}).Debug("steam: read rcon response")
 
-			_, err := buf.Write(b)
-			if err != nil {
+			if _, err := buf.Write(b); err != nil {
 				return nil, err
 			}
 
 			total -= n
 		}
 		if err != nil {
-			log.WithFields(logrus.Fields{
-				"err": err,
-			}).Error("steam: could not receive data")
-
-			if err == io.EOF {
-				return nil, err
-			}
+			return nil, err
 		}
 
 		log.WithFields(logrus.Fields{
