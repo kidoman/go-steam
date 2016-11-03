@@ -32,11 +32,7 @@ func (s *rconSocket) send(p []byte) error {
 	}
 
 	_, err := s.conn.Write(p)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func (s *rconSocket) receive() (_ []byte, err error) {
