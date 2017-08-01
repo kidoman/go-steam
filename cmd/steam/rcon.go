@@ -5,8 +5,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/codegangsta/cli"
 	"github.com/sostronk/go-steam"
+	"github.com/urfave/cli"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
