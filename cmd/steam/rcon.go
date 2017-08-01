@@ -27,12 +27,29 @@ var rconCommand = cli.Command{
 			Usage: "time to wait between successive execs",
 			Value: 1 * time.Second,
 		},
+		cli.StringFlag{
+			Name:  "password, p",
+			Usage: "password to use for rcon",
+		},
 	},
 	Action: func(c *cli.Context) {
 		addr := c.GlobalString("addr")
 		if addr == "" {
 			fmt.Println("please provide the address to exec command on")
 			os.Exit(1)
+		}
+
+		password := c.String("password")
+		if password == "" {
+			fmt.Printf("Password: ")
+			passwordSlice, err := terminal.ReadPassword(0)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "could not read password: %v\n", err)
+				os.Exit(1)
+			}
+			fmt.Println()
+
+			password = string(passwordSlice)
 		}
 
 		if !c.Args().Present() {
@@ -42,15 +59,7 @@ var rconCommand = cli.Command{
 
 		cmd := c.Args().First()
 
-		fmt.Printf("Password: ")
-		password, err := terminal.ReadPassword(0)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "could not read password: %v\n", err)
-			os.Exit(1)
-		}
-		fmt.Println()
-
-		server, err := steam.Connect(addr, steam.WithRCONPassword(string(password)))
+		server, err := steam.Connect(addr, steam.WithRCONPassword(password))
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "could not connect to server %v: %v\n", addr, err)
 			os.Exit(1)
