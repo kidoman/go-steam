@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"math/rand"
+	"strconv"
+	"strings"
 )
 
 const (
@@ -14,6 +16,7 @@ const (
 	hPlayersInfoResponse          = 'D'
 )
 
+// ServerType indicates the type of the server.
 type ServerType int
 
 func (st *ServerType) unmarshalBinary(data []byte) error {
@@ -35,9 +38,14 @@ func (st ServerType) String() string {
 }
 
 const (
+	// STInvalid describes a invalid server type.
 	STInvalid ServerType = iota
+
+	// STDedicated indicates a dedicated server type.
 	STDedicated
+	// STNonDedicated indicates a non dedicated server type.
 	STNonDedicated
+	// STProxy indicates a proxy server type.
 	STProxy
 )
 
@@ -48,6 +56,7 @@ var serverTypeStrings = map[ServerType]string{
 	STProxy:        "Proxy",
 }
 
+// Environment indicates the server's host environment.
 type Environment int
 
 func (e *Environment) unmarshalBinary(data []byte) error {
@@ -71,9 +80,14 @@ func (e Environment) String() string {
 }
 
 const (
+	// EInvalid indicates a invalid host environment.
 	EInvalid Environment = iota
+
+	// ELinux indicates that the server is hosted on Linux.
 	ELinux
+	// EWindows indicates that the server is hosted on Windows.
 	EWindows
+	// EMac indicates that the server is hosted on Mac OS X.
 	EMac
 )
 
@@ -84,6 +98,7 @@ var environmentStrings = map[Environment]string{
 	EMac:     "Mac",
 }
 
+// Visibility indicates the visibility of the server.
 type Visibility int
 
 func (v *Visibility) unmarshalBinary(data []byte) error {
@@ -104,8 +119,12 @@ func (v Visibility) String() string {
 }
 
 const (
+	// VInvalid indicates a invalid visibility.
 	VInvalid Visibility = iota
+
+	// VPublic indicates a publicly visibly server.
 	VPublic
+	// VPrivate indicates a private server.
 	VPrivate
 )
 
@@ -115,6 +134,7 @@ var visibilityStrings = map[Visibility]string{
 	VPrivate: "Private",
 }
 
+// VAC indicates the status of the Valve Anti Cheat system.
 type VAC int
 
 func (v *VAC) unmarshalBinary(data []byte) error {
@@ -135,8 +155,12 @@ func (v VAC) String() string {
 }
 
 const (
+	// VACInvalid indicates a invalid VAC configuration.
 	VACInvalid VAC = iota
+
+	// VACUnsecured indicates a insecure server (VAC disabled).
 	VACUnsecured
+	// VACSecure indicates a secure server (VAC enabled).
 	VACSecure
 )
 
@@ -157,6 +181,7 @@ func (infoRequest) marshalBinary() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// InfoResponse represents a response to a info query.
 type InfoResponse struct {
 	Protocol    int
 	Name        string
@@ -281,6 +306,7 @@ func (r *playersInfoChallengeResponse) unmarshalBinary(data []byte) (err error) 
 	return nil
 }
 
+// PlayersInfoResponse represents a response to a player info query.
 type PlayersInfoResponse struct {
 	Players []*Player
 }
@@ -309,6 +335,7 @@ func (r *PlayersInfoResponse) unmarshalBinary(data []byte) (err error) {
 	return nil
 }
 
+// Player represents a player entity in the server.
 type Player struct {
 	Name     string
 	Score    int
@@ -377,5 +404,47 @@ func (r *rconResponse) unmarshalBinary(data []byte) (err error) {
 	r.id = readLong(buf)
 	r.typ = rconRequestType(readLong(buf))
 	r.body = readBytes(buf, int(r.size-10))
+	return nil
+}
+
+// TODO(anands): Temporary sample output.
+//   CPU   NetIn   NetOut    Uptime  Maps   FPS   Players  Svms    +-ms   ~tick
+//   10.0 241763.2 1518923.5   10419    58  127.98      16    3.72    1.56    0.36
+// L 03/09/2018 - 08:59:17: rcon from "106.51.72.233:60415": command "stats"
+
+// TODO(anands): Proper naming.
+type StatsResponse struct {
+	CPU         int
+	NetIn       float64
+	NetOut      float64
+	Uptime      int
+	Maps        int
+	FPS         float64
+	Players     int
+	Svms        float64
+	PlusMinusms float64
+	Tick        float64
+}
+
+func (r *StatsResponse) unmarshalStatsRCONResponse(output string) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = r.(error)
+		}
+	}()
+
+	fields := strings.Fields(output)
+
+	r.CPU = int(mustInterface(strconv.ParseFloat(fields[10], 64)).(float64))
+	r.NetIn = mustInterface(strconv.ParseFloat(fields[11], 64)).(float64)
+	r.NetOut = mustInterface(strconv.ParseFloat(fields[12], 64)).(float64)
+	r.Uptime = mustInterface(strconv.Atoi(fields[13])).(int)
+	r.Maps = mustInterface(strconv.Atoi(fields[14])).(int)
+	r.FPS = mustInterface(strconv.ParseFloat(fields[15], 64)).(float64)
+	r.Players = mustInterface(strconv.Atoi(fields[16])).(int)
+	r.Svms = mustInterface(strconv.ParseFloat(fields[17], 64)).(float64)
+	r.PlusMinusms = mustInterface(strconv.ParseFloat(fields[18], 64)).(float64)
+	r.Tick = mustInterface(strconv.ParseFloat(fields[19], 64)).(float64)
+
 	return nil
 }

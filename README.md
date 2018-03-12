@@ -9,7 +9,13 @@
 ## Installation
 
 ```
-go get github.com/kidoman/go-steam
+go get -u github.com/sostronk/go-steam
+```
+
+To use the build in `steam` utility, install it using:
+
+```
+go get -u github.com/sostronk/go-steam/cmd/steam
 ```
 
 ## License

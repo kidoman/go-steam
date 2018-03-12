@@ -1,3 +1,5 @@
+// +build ignore
+
 package main
 
 import (
@@ -6,7 +8,7 @@ import (
 	"os"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/kidoman/go-steam"
+	"github.com/sostronk/go-steam"
 )
 
 func main() {

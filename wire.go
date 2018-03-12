@@ -99,18 +99,18 @@ func toInt(v interface{}) int {
 }
 
 func writeRequestPrefix(buf *bytes.Buffer) {
-	buf.Write(requestPrefix)
+	mustn(buf.Write(requestPrefix))
 }
 
 var requestPrefix = []byte{0xFF, 0xFF, 0xFF, 0xFF}
 
 func writeString(buf *bytes.Buffer, v string) {
-	buf.WriteString(v)
-	buf.WriteByte(0)
+	mustn(buf.WriteString(v))
+	must(buf.WriteByte(0))
 }
 
 func writeByte(buf *bytes.Buffer, v byte) {
-	buf.WriteByte(v)
+	must(buf.WriteByte(v))
 }
 
 func writeLong(buf *bytes.Buffer, v int32) {
@@ -118,5 +118,5 @@ func writeLong(buf *bytes.Buffer, v int32) {
 }
 
 func writeNull(buf *bytes.Buffer) {
-	buf.WriteByte(0)
+	must(buf.WriteByte(0))
 }
