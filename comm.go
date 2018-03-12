@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"math/rand"
+	"strconv"
+	"strings"
 )
 
 const (
@@ -402,5 +404,47 @@ func (r *rconResponse) unmarshalBinary(data []byte) (err error) {
 	r.id = readLong(buf)
 	r.typ = rconRequestType(readLong(buf))
 	r.body = readBytes(buf, int(r.size-10))
+	return nil
+}
+
+// TODO(anands): Temporary sample output.
+//   CPU   NetIn   NetOut    Uptime  Maps   FPS   Players  Svms    +-ms   ~tick
+//   10.0 241763.2 1518923.5   10419    58  127.98      16    3.72    1.56    0.36
+// L 03/09/2018 - 08:59:17: rcon from "106.51.72.233:60415": command "stats"
+
+// TODO(anands): Proper naming.
+type StatsResponse struct {
+	CPU         int
+	NetIn       float64
+	NetOut      float64
+	Uptime      int
+	Maps        int
+	FPS         float64
+	Players     int
+	Svms        float64
+	PlusMinusms float64
+	Tick        float64
+}
+
+func (r *StatsResponse) unmarshalStatsRCONResponse(output string) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = r.(error)
+		}
+	}()
+
+	fields := strings.Fields(output)
+
+	r.CPU = int(mustInterface(strconv.ParseFloat(fields[10], 64)).(float64))
+	r.NetIn = mustInterface(strconv.ParseFloat(fields[11], 64)).(float64)
+	r.NetOut = mustInterface(strconv.ParseFloat(fields[12], 64)).(float64)
+	r.Uptime = mustInterface(strconv.Atoi(fields[13])).(int)
+	r.Maps = mustInterface(strconv.Atoi(fields[14])).(int)
+	r.FPS = mustInterface(strconv.ParseFloat(fields[15], 64)).(float64)
+	r.Players = mustInterface(strconv.Atoi(fields[16])).(int)
+	r.Svms = mustInterface(strconv.ParseFloat(fields[17], 64)).(float64)
+	r.PlusMinusms = mustInterface(strconv.ParseFloat(fields[18], 64)).(float64)
+	r.Tick = mustInterface(strconv.ParseFloat(fields[19], 64)).(float64)
+
 	return nil
 }

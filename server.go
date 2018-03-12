@@ -414,3 +414,22 @@ func init() {
 	log = logrus.New()
 	log.Out = ioutil.Discard
 }
+
+// Stats retrieves server stats.
+func (s *Server) Stats() (*StatsResponse, error) {
+	log.Debug("receiving stats response")
+
+	output, err := s.Send("stats")
+	if err != nil {
+		return nil, err
+	}
+
+	log.Debug("unmarshaling stats response")
+
+	var res StatsResponse
+	if err := res.unmarshalStatsRCONResponse(output); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}

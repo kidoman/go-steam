@@ -11,3 +11,11 @@ func mustn(_ int, err error) {
 		panic(err)
 	}
 }
+
+func mustInterface(i interface{}, err error) interface{} {
+	if err != nil {
+		panic(err)
+	}
+
+	return i
+}
