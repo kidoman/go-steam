@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	logrus "github.com/Sirupsen/logrus"
+	logrus "github.com/sirupsen/logrus"
 )
 
 type DialFn func(network, address string) (net.Conn, error)
